@@ -1,0 +1,139 @@
+---
+title: OpenAPI-Referenz
+description: Vollständige Liste aller REST-Endpunkte aus der OpenAPI-Spezifikation – das Fumadocs-Äquivalent zur Swagger UI.
+---
+
+Diese Seite spiegelt die **OpenAPI-Spezifikation** der GoodFunds-Instanz wider – dieselbe Quelle, aus
+der auch die Swagger UI gespeist wird. Sie wurde aus der Spec der Gruppe „Öffentliche API"
+(`platform-api`, OpenAPI 3.1) generiert und listet **60 Operationen** über 11 Bereiche.
+
+<Callout type="info">
+  Die interaktive Variante (zum Ausprobieren, mit Schemata und „Try it out") erreichst du direkt in
+  der laufenden Anwendung unter **`/swagger-ui.html`**. Die rohe Spezifikation liegt unter
+  **`/api/v1/api-docs`** (bzw. `/api/v1/api-docs/platform-api` für diese Gruppe).
+</Callout>
+
+<Callout type="warn">
+  Generierter Inhalt – Quelle ist `platform/openapi-platform.json`. Bei Änderungen an den
+  REST-Controllern die Spec neu ziehen (`platform/scripts/fetch-openapi.mjs`) und diese Seite
+  aktualisieren, damit sie nicht veraltet.
+</Callout>
+
+Detaillierte Beispiele (Request-Bodies, Antworten, curl) zu den wichtigsten Flows findest du unter
+[Authentifizierung](./authentifizierung) und [Endpunkte](./endpunkte). Die folgende Übersicht ist die
+vollständige Referenz.
+
+## Authentifizierung
+
+| Methode | Pfad | Beschreibung |
+| --- | --- | --- |
+| `GET` | `/api/v1/auth/account-names/{userId}` | Get account names for a user (public). |
+| `POST` | `/api/v1/auth/forgot-password` | Request a password reset email. Accepts email or username. Always returns success (anti-enumeration). |
+| `GET` | `/api/v1/auth/load-for-edit` | Get current user's full details for the edit-profile form. |
+| `POST` | `/api/v1/auth/login` | Login with username/email and password. Sets JWT cookie on success. |
+| `POST` | `/api/v1/auth/logout` | Logout: revokes refresh token and clears all auth cookies. |
+| `GET` | `/api/v1/auth/me` | Get current authenticated user with engagement data. |
+| `POST` | `/api/v1/auth/resend-verification` | Resend email verification. Always returns success (anti-enumeration). |
+| `POST` | `/api/v1/auth/reset-password` | Reset password using a token from the reset email. |
+| `POST` | `/api/v1/auth/signup` | Register a new user. Creates user with UNVERIFIED status and sends verification email. |
+| `POST` | `/api/v1/auth/update` | Update current user's profile. |
+| `POST` | `/api/v1/auth/verify-email` | Verify email address using the token from the verification email. |
+
+## Spenden
+
+| Methode | Pfad | Beschreibung |
+| --- | --- | --- |
+| `POST` | `/api/v1/donations` | Submits a one-time donation. Returns Stripe clientSecret for confirmation. |
+| `POST` | `/api/v1/donations/{intentId}/micropayment-sepa` | micropayment SEPA flow: customerCreate/bankaccountSet/sessionCreate/sessionApprove with the donor's IBAN. Intent stays PENDING until the notification confirms. |
+| `POST` | `/api/v1/donations/{intentId}/micropayment-session` | micropayment card flow step 2: turn a JsBridge card token into a payment session (tokenSessionCreate). Returns the sessionId. |
+| `GET` | `/api/v1/donations/{intentId}/status` | Donation status for success-page polling. Optional cryptId (micropayment card return) triggers an active transactionGetCrypt poll + reconcile. |
+| `GET` | `/api/v1/donations/by-token/{token}/minimal` | Returns minimal donor + donation data (firstName, lastName, fullName, salutation, title, amount, currency, rhythm, *Cent, paymentMethodType, transactionFeeCovered) for a donation personalization token. |
+
+## Signaturen
+
+| Methode | Pfad | Beschreibung |
+| --- | --- | --- |
+| `GET` | `/api/v1/signatures/by-token/{token}/minimal` | Returns minimal supporter data (firstName, lastName, fullName, salutation, title) for a personalization token. |
+| `POST` | `/api/v1/signatures/create` | Creates Signature from Convertion element, like Webcomponent. |
+
+## Conversion-Elemente
+
+| Methode | Pfad | Beschreibung |
+| --- | --- | --- |
+| `GET` | `/api/v1/conversion-elements/{id}/config` | Get ConversionElement Config (v1 schema) ready for rendering. |
+| `GET` | `/api/v1/conversion-elements/{id}/counter` | Get live counter (current + computed goal) for a conversion element. |
+
+## Conversion
+
+| Methode | Pfad | Beschreibung |
+| --- | --- | --- |
+| `GET` | `/api/v1/conversion/resolve-path` | resolve |
+| `GET` | `/api/v1/conversion/slug-for-id` | slugForId |
+
+## Konten
+
+| Methode | Pfad | Beschreibung |
+| --- | --- | --- |
+| `GET` | `/api/v1/account/{shortName}` | getByShortName |
+
+## Plattform
+
+| Methode | Pfad | Beschreibung |
+| --- | --- | --- |
+| `GET` | `/api/v1/platform/accounts` | getPlatformAccounts |
+| `GET` | `/api/v1/platform/engagement/ranking` | Get engagement ranking (users with published profiles). |
+| `GET` | `/api/v1/platform/engagement/score/{userId}` | Get engagement score for a user. |
+| `GET` | `/api/v1/platform/follows/status` | Check if the current user follows an account or one of its entities. |
+| `POST` | `/api/v1/platform/follows/toggle` | Toggle follow for an account or one of its entities. Returns new follow state. |
+| `GET` | `/api/v1/platform/likes/status` | Check if the current user has liked an account or one of its entities. |
+| `POST` | `/api/v1/platform/likes/toggle` | Toggle like for an account or one of its entities. Returns new like state. |
+| `GET` | `/api/v1/platform/profiles/by-user/{userId}` | Get a public profile by user ID. SuperAdmins can see unpublished profiles. |
+| `GET` | `/api/v1/platform/profiles/by-username/{username}` | Get a profile by username. Returns unpublished profiles for authenticated users. |
+| `GET` | `/api/v1/platform/profiles/me` | Get the current user's profile (including unpublished). |
+| `POST` | `/api/v1/platform/profiles/publish` | Set profile publish state. |
+| `POST` | `/api/v1/platform/profiles/update` | Create or update the current user's profile. |
+| `GET` | `/api/v1/platform/search` | Search across all indices (spotlight, legacy format). |
+| `GET` | `/api/v1/platform/search/accounts` | Search verified accounts on the platform. |
+| `GET` | `/api/v1/platform/search/all` | Search across accounts and profiles. |
+| `GET` | `/api/v1/platform/search/campaigns` | Public-facing campaign search (powers /campaigns and the org-detail teaser). |
+| `GET` | `/api/v1/platform/search/spotlight` | Autocomplete/spotlight search for quick suggestions. |
+| `GET` | `/api/v1/platform/useractions/{userid}` | Get all user actions (for calendar, SDG chart, etc.). |
+| `GET` | `/api/v1/platform/useractions/followed` | Get accounts that a user follows. |
+| `GET` | `/api/v1/platform/useractions/liked` | Get accounts that a user has liked. |
+| `GET` | `/api/v1/platform/useractions/points` | Get points breakdown for a user. |
+| `GET` | `/api/v1/platform/userprofiles` | getApiV1PlatformUserprofiles |
+| `GET` | `/api/v1/platform/userprofiles/{username}` | getByUsername |
+| `GET` | `/api/v1/platform/userprofiles/search` | getApiV1PlatformUserprofilesSearch |
+| `POST` | `/api/v1/platform/views/record` | Record a view event for an entity (account, profile, campaign). |
+| `GET` | `/api/v1/platform/views/stats` | Get view statistics for an entity. |
+| `GET` | `/api/v1/platform/views/timeseries` | Get hourly view time-series for an entity (default: last 7 days). |
+
+## Profil-Medien
+
+| Methode | Pfad | Beschreibung |
+| --- | --- | --- |
+| `POST` | `/api/v1/profile/media-removal` | Remove a profile image (avatar or hero). |
+| `POST` | `/api/v1/profile/media-upload` | Upload a profile image (avatar or hero) — Platform API. |
+
+## Webhooks & öffentliche Configs
+
+| Methode | Pfad | Beschreibung |
+| --- | --- | --- |
+| `GET` | `/api/v1/public/{accountId}/webhooks/micropayment/{secret}` | micropayment notification receiver (GET). Tenant from `{accountId}`, auth via `{secret}` path segment. |
+| `POST` | `/api/v1/public/{accountId}/webhooks/micropayment/{secret}` | micropayment notification receiver (POST). Tenant from `{accountId}`, auth via `{secret}` path segment. |
+| `POST` | `/api/v1/public/{accountId}/webhooks/stripe` | Stripe webhook receiver. Tenant resolved from `{accountId}` in URL. |
+| `GET` | `/api/v1/public/campaigns/{accountShortName}/{slug}/config` | Get Platform Campaign Config (v1 schema) for a published platform-CE. |
+
+## Stammdaten
+
+| Methode | Pfad | Beschreibung |
+| --- | --- | --- |
+| `GET` | `/api/v1/sdg/list` | sdgList |
+| `GET` | `/api/v1/topic/list` | topicList |
+
+## Übersetzung
+
+| Methode | Pfad | Beschreibung |
+| --- | --- | --- |
+| `GET` | `/api/v1/translate` | translate |
+| `GET` | `/api/v1/translate/bundle` | getBundle |

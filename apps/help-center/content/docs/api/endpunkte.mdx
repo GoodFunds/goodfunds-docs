@@ -1,0 +1,163 @@
+---
+title: Endpunkte
+description: Referenz der öffentlichen REST-Endpunkte von GoodFunds – Spenden, Konten, Engagement und Webhooks.
+---
+
+Diese Seite dokumentiert die wichtigsten **öffentlichen REST-Endpunkte** mit echten Beispielen aus
+GoodFunds. Alle Pfade sind relativ zur [Basis-URL](./) und mit `/api/v1/` versioniert.
+
+<Callout type="info">
+  Endpunkte, die mit `@AnonymousAllowed` markiert sind, benötigen **keine** Anmeldung. Persönliche
+  oder kontobezogene Endpunkte erwarten ein gültiges `jwtToken`-Cookie – siehe
+  [Authentifizierung](./authentifizierung).
+</Callout>
+
+## Spenden
+
+### Spende anlegen
+
+`POST /api/v1/donations` &nbsp;·&nbsp; öffentlich
+
+Legt eine Spendenabsicht an. Die Antwort enthält je nach Zahlungsweg ein `clientSecret` (Stripe) zur
+Weiterverarbeitung im Frontend.
+
+```bash
+curl -X POST https://manager.goodfunds.de/api/v1/donations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accountId": 123,
+    "campaignId": 456,
+    "amount": 2500,
+    "email": "spender@example.org",
+    "firstName": "Erika",
+    "lastName": "Beispiel"
+  }'
+```
+
+**Antwort** (`CreateDonationResult`):
+
+```json
+{
+  "intentId": "don_9f2c…",
+  "clientSecret": "pi_3Ab…_secret_…"
+}
+```
+
+### Spendenstatus abfragen
+
+`GET /api/v1/donations/{intentId}/status` &nbsp;·&nbsp; öffentlich
+
+```bash
+curl "https://manager.goodfunds.de/api/v1/donations/don_9f2c.../status"
+```
+
+**Antwort** (`DonationStatusResponse`): `status` ist einer von `PENDING`, `COMPLETED`, `FAILED`.
+
+```json
+{ "status": "COMPLETED" }
+```
+
+Optional kann ein `cryptId`-Query-Parameter zur Verifikation mitgegeben werden. Für den
+Micropayment-Weg gibt es zusätzlich `POST /api/v1/donations/{intentId}/micropayment-session` und
+`POST /api/v1/donations/{intentId}/micropayment-sepa`.
+
+## Plattform-Konten
+
+### Konten auflisten
+
+`GET /api/v1/platform/accounts` &nbsp;·&nbsp; öffentlich
+
+Liefert öffentliche Organisationsprofile, cursor-paginiert und nach SDGs/Themen filterbar.
+
+```bash
+curl "https://manager.goodfunds.de/api/v1/platform/accounts?pageSize=20&sdgs=3,13"
+```
+
+| Query-Parameter | Beschreibung |
+| --- | --- |
+| `cursor` | Cursor für die nächste Seite (aus der vorherigen Antwort) |
+| `pageSize` | Anzahl Einträge pro Seite |
+| `sdgs` | Filter nach Sustainable Development Goals |
+| `topics` | Filter nach Themen |
+
+### Konto-Detail
+
+`GET /api/v1/platform/accounts/{shortName}` &nbsp;·&nbsp; öffentlich
+
+```bash
+curl "https://manager.goodfunds.de/api/v1/platform/accounts/wald-ev"
+```
+
+Antworten sind in `ControllerResponse<…>` verpackt (`{ "success": true, "data": { … } }`).
+
+## Engagement & Rankings
+
+| Endpunkt | Beschreibung |
+| --- | --- |
+| `GET /api/v1/platform/engagement/score/{userId}` | Punktestand eines Nutzers (Likes, Follows, Signaturen, Rang) |
+| `GET /api/v1/platform/engagement/ranking` | Rangliste, `limit` (max. 100) und `offset` |
+
+```bash
+curl "https://manager.goodfunds.de/api/v1/platform/engagement/ranking?limit=10&offset=0"
+```
+
+**Antwort** (`ScoreResponse` beim Einzel-Score):
+
+```json
+{
+  "totalPoints": 1280,
+  "likeCount": 42,
+  "followCount": 17,
+  "signatureCount": 5,
+  "rank": 23
+}
+```
+
+## Webhooks
+
+Webhooks sind **mandantengebunden**: Die Konto-ID steht im Pfad und wird vor der Verarbeitung
+aufgelöst.
+
+### Stripe
+
+`POST /api/v1/public/{accountId}/webhooks/stripe` &nbsp;·&nbsp; öffentlich
+
+Der Rohtext des Request-Bodys wird gegen den Header `Stripe-Signature` (HMAC) verifiziert. Bei
+gültiger Signatur antwortet der Endpunkt mit `200 OK`, sonst mit `400 Bad Request`.
+
+```http
+POST /api/v1/public/123/webhooks/stripe HTTP/1.1
+Host: manager.goodfunds.de
+Stripe-Signature: t=1700000000,v1=5257a8…
+Content-Type: application/json
+
+{ "id": "evt_…", "type": "payment_intent.succeeded", "data": { … } }
+```
+
+### Micropayment
+
+`GET|POST /api/v1/public/{accountId}/webhooks/micropayment/{secret}` &nbsp;·&nbsp; öffentlich
+
+Das `{secret}` im Pfad wird gegen das hinterlegte `webhookSecret` der Integration geprüft (bei
+Abweichung `403`). Anfrage und Antwort verwenden das NVP-Format (form-urlencoded), die Antwort kommt
+als `text/plain; charset=iso-8859-1`.
+
+## OAuth-Callback
+
+`GET /api/oauth/callback` &nbsp;·&nbsp; öffentlich
+
+Rückleitungsziel nach einem Integrations-Login (z. B. Microsoft Dynamics 365). Erwartet die
+Query-Parameter `state` (AES-GCM-verschlüsselt, CSRF-Schutz) und `code` bzw. `error`; leitet danach
+zur Integrationsseite in der GoodFunds-Oberfläche weiter. Manipuliertes `state` führt zu `400`.
+
+## Hinweis: interne Endpunkte (Hilla-RPC)
+
+Die Anwendung selbst kommuniziert überwiegend per **Hilla-RPC** über `@BrowserCallable`-Klassen.
+Diese werden als `POST /connect/<KlassenName>/<methodenName>` aufgerufen (z. B.
+`POST /connect/AuthEndpoint/login`) und besitzen automatisch generierte TypeScript-Clients.
+
+<Callout type="warn">
+  Hilla-Endpunkte sind für die interne Anwendung gedacht und gelten **nicht** als stabile öffentliche
+  API – Signaturen können sich ohne Vorankündigung ändern. Für Integrationen verwende ausschließlich
+  die oben beschriebenen `/api/v1/…`-REST-Endpunkte.
+</Callout>

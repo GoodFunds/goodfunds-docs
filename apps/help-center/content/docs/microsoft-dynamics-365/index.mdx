@@ -1,0 +1,65 @@
+---
+title: Überblick
+description: Microsoft Dynamics 365 als CRM-Provider in GoodFunds anbinden und Kontakte in die Dataverse-Umgebung synchronisieren.
+---
+
+Microsoft Dynamics 365 ist der **zweite CRM-Provider** in GoodFunds (nach Fundraisingbox). Damit kann
+eine Organisation GoodFunds-Kontakte in ihre Dynamics-**Dataverse**-Umgebung übertragen — neue
+Kontakte werden angelegt, bestehende aktuell gehalten.
+
+Das gemeinsame CRM-Integrationssystem (`CrmIntegrationPort`, der Queue-Task-Handler und der
+Sync-Orchestrator) wird unverändert wiederverwendet. Neu ist nur der Dynamics-spezifische Adapter.
+
+## Funktionsumfang
+
+- **Kontakt-Upsert per E-Mail** — GoodFunds sucht einen Kontakt über seine primäre E-Mail; existiert
+  er, wird er aktualisiert, andernfalls neu angelegt.
+- **Konfigurierbare Update-Strategie** — legt fest, wie bestehende Kontaktdaten behandelt werden
+  (`SKIP`, `UPDATE_IF_EMPTY`, `UPDATE_IF_CHANGED`).
+- **Feld-Mapping** — GoodFunds-Kontaktfelder werden auf Dynamics-`contact`-Attribute abgebildet,
+  inklusive Live-Erkennung der in der Umgebung verfügbaren Attribute.
+- **OAuth 2.0 (Server-zu-Server)** — die Authentifizierung nutzt den Client-Credentials-Flow gegen die
+  Microsoft-Identitätsplattform. Kein interaktiver Login, keine Refresh-Tokens zu verwalten; das
+  Access-Token wird gecacht und automatisch erneuert.
+
+## Zentrale Begriffe
+
+| Begriff | Bedeutung |
+| --- | --- |
+| **Dataverse** | Die Datenbank hinter Dynamics 365. GoodFunds spricht mit deren REST-**Web-API**. |
+| **OData** | Der REST-/Query-Standard der Web-API (JSON-Antworten mit `value`-Array, `$filter`/`$select`-Query-Optionen). |
+| **Microsoft Entra ID** (Azure AD) | Microsofts Identitätsdienst, in dem die GoodFunds-App registriert wird. |
+| **Tenant** | Die Microsoft-Organisation. Jede Organisation hat eine eigene Tenant-ID. |
+| **Environment** | Die konkrete Dynamics-Instanz, z. B. `https://org123.crm4.dynamics.com`. |
+| **App-Registrierung** | Die Entra-ID-Identität (Client-ID + Client-Secret), als die sich GoodFunds authentifiziert. |
+
+## Capabilities
+
+Der Provider meldet dem CRM-Sync-Motor folgende Capabilities:
+
+- `FIELD_DISCOVERY` — verfügbare `contact`-Attribute aus der Umgebung auslesen.
+- `CONTACT_SEARCH` — Kontakt per E-Mail finden.
+- `CONTACT_UPDATE` — Kontakte anlegen und aktualisieren.
+
+## Zusammenspiel
+
+```
+GoodFunds-Kontakt
+      │
+      ▼
+CrmIntegrationPort  ──►  MicrosoftDynamicsProvider   (mappt Felder, wendet Update-Strategie an)
+                              │
+                              ▼
+                        MicrosoftDynamicsClient       (HTTP + OData, OAuth-Token)
+                              │
+                              ▼
+                        Dataverse Web-API   {environmentUrl}/api/data/v9.2
+```
+
+## Nächste Schritte
+
+1. [Azure-/Entra-ID-Setup](./azure-setup) — App registrieren und die vier Zugangsdaten sammeln.
+2. [Konfiguration in GoodFunds](./configuration) — Zugangsdaten eingeben, Verbindung testen und Felder
+   mappen.
+3. [Architektur- & Entwickler-Referenz](./architecture) — interner Aufbau, Endpunkte und
+   Fehlerbehandlung.

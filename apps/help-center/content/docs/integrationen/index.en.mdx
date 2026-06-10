@@ -1,0 +1,41 @@
+---
+title: Integrations — Overview
+description: Connect GoodFunds with your CRM, email marketing, analytics, and more.
+---
+
+Integrations connect GoodFunds with the tools your organization already uses. New contacts and
+donations land automatically where you process them — no copy-and-paste.
+
+## Categories
+
+<Cards>
+  <Card title="CRM" href="./microsoft-dynamics-365-verbinden" description="Push contacts and donors into your CRM system." />
+  <Card title="Email marketing" href="./brevo" description="Sync contacts with your newsletter tool." />
+  <Card title="Payments" href="./paypal" description="Process donations through your payment providers." />
+</Cards>
+
+## Available integrations
+
+| Integration | Category | Status |
+| --- | --- | --- |
+| [Microsoft Dynamics 365](./microsoft-dynamics-365-verbinden) | CRM | Available |
+| [Brevo](./brevo) | Email marketing | Coming soon |
+| [PayPal](./paypal) | Payments | Coming soon |
+| [Stripe](./stripe) | Payments | Coming soon |
+
+## How an integration works
+
+Most integrations follow the same pattern:
+
+1. **Create credentials** — at the external provider (e.g. an API key or an app registration).
+2. **Enter them in GoodFunds** — add the credentials under **Integrations**.
+3. **Test the connection** — GoodFunds checks that the connection works.
+4. **Map fields** — decide which GoodFunds field is written to which field in the other system.
+
+<Callout type="info">
+  Your credentials are always stored **encrypted** in GoodFunds. Secret keys are never shown in plain
+  text again after you save them.
+</Callout>
+
+For the full flow with a real example, see
+[Connect Microsoft Dynamics 365](./microsoft-dynamics-365-verbinden).

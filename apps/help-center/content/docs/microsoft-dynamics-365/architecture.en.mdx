@@ -1,0 +1,130 @@
+---
+title: Architecture & Developer Reference
+description: Internal design of the Microsoft Dynamics 365 CRM adapter — classes, Dataverse Web API endpoints, OData specifics, OAuth and error handling.
+---
+
+The Microsoft Dynamics adapter follows the project's hexagonal layout and reuses the existing CRM
+port system. Only the provider-specific adapter is new.
+
+## Package layout
+
+```
+integration/outbound/adapter/crm/microsoftdynamics/
+├── domain/
+│   └── MicrosoftDynamicsCredentials.java        decrypted credential shape
+├── inbound/vaadin/
+│   └── MicrosoftDynamicsCredentialForm.java      credential wizard form
+└── outbound/
+    ├── MicrosoftDynamicsClient.java              HTTP/OData gateway
+    └── MicrosoftDynamicsProvider.java            CrmIntegrationPort implementation
+```
+
+The `ProviderName` enum gains a `MicrosoftDynamics` value. Spring bean ids:
+
+- Provider: `MicrosoftDynamicsProvider`
+- Form: `MicrosoftDynamicsForm` (i.e. `ProviderName.MicrosoftDynamics + "Form"`, so
+  `IntegrationProviderFactory#getCredentialInput` resolves it automatically).
+
+## Responsibilities
+
+| Class | Responsibility |
+| --- | --- |
+| `MicrosoftDynamicsCredentials` | Decrypted in-memory credentials (tenant/client/secret/environment URL, attribute map, update strategy). `authMethod = OAUTH2_CLIENT_CREDENTIALS`. Persisted as encrypted `configJson`. |
+| `MicrosoftDynamicsClient` | Low-level gateway: OkHttp usage, URL building, OData headers, response reading, HTTP error mapping. Returns **raw JSON** strings. |
+| `MicrosoftDynamicsProvider` | Business logic: parses JSON, maps GoodFunds ↔ Dynamics fields, applies the update strategy, implements `CrmIntegrationPort`. |
+| `MicrosoftDynamicsCredentialForm` | Vaadin credential form (`CredentialInput`): collects inputs, drives the connection test, builds the field mapping. |
+
+## Dataverse Web API
+
+Base URL: `{environmentUrl}/api/data/v9.2`
+
+| Operation | HTTP | Path |
+| --- | --- | --- |
+| Connection check | GET | `/WhoAmI` |
+| Find contact by email | GET | `/contacts?$filter=emailaddress1 eq '{email}'` |
+| Create contact | POST | `/contacts` |
+| Update contact | PATCH | `/contacts({contactId})` |
+| Field discovery | GET | `/EntityDefinitions(LogicalName='contact')/Attributes` |
+
+URLs are always built with OkHttp's `HttpUrl` builder — **no string concatenation**. The OData
+entity-set/key/navigation segments (e.g. `contacts(<id>)`, `EntityDefinitions(LogicalName='contact')`)
+are valid path segments and pass through unencoded.
+
+### OData specifics
+
+- Request headers on every call: `OData-Version: 4.0`, `Accept: application/json`.
+- On POST/PATCH additionally: `Content-Type: application/json` and
+  `Prefer: return=representation` (so the response body contains the written entity).
+- Collection responses are wrapped in an OData envelope: `{ "value": [ ... ] }`.
+- The contact primary key is `contactid` (a GUID), exposed as the GoodFunds external id.
+
+## Authentication (OAuth 2.0 Client Credentials)
+
+Authentication is delegated entirely to the shared `OAuthTokenService` (GVL-127). The client builds
+an `OAuthClientCredentialsConfig` from the credentials and calls `getValidToken`, which **caches** the
+token per credential id and **transparently re-fetches** it once expired.
+
+- Token endpoint: `https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token`
+- Scope: `{environmentUrl}/.default`
+- Every request carries `Authorization: Bearer {accessToken}`.
+
+The environment URL is normalized (whitespace stripped, trailing slashes removed) before it is used
+in the scope and base URL — a stray trailing space otherwise produces
+`AADSTS70011 invalid_scope`.
+
+## Upsert flow
+
+`createOrUpdateContact` is an upsert keyed on email:
+
+1. `findContact(email)` → GET `/contacts?$filter=emailaddress1 eq '{email}'`.
+2. **Match found** → merge fields with `ContactAttributeMerger` (using the configured strategy) and
+   PATCH `/contacts({contactId})`. If the merge produces no changes, the update is skipped and
+   reported as a successful no-op.
+3. **No match** → POST `/contacts`, returning the new `contactid`.
+
+Field discovery (`getAvailableContactFields`) reads the `contact` attribute metadata and maps Dynamics
+attribute types to CRM field types:
+
+| Dynamics `AttributeType` | CRM `FieldType` |
+| --- | --- |
+| `String`, `Memo` | `STRING` |
+| `Integer`, `BigInt`, `Decimal`, `Double`, `Money` | `NUMBER` |
+| `DateTime` | `DATE` |
+| `Boolean` | `BOOLEAN` |
+| `Picklist`, `State`, `Status` | `ENUM` |
+| anything else (Lookup, Owner, Uniqueidentifier, Virtual, …) | *(skipped)* |
+
+## Error handling
+
+The client maps HTTP/network failures onto the integration exception types so the queue-task handler
+can decide whether to retry:
+
+| Condition | Exception |
+| --- | --- |
+| HTTP 429 or 5xx | `RetryableIntegrationException` |
+| Other non-2xx | `NonRetryableIntegrationException` |
+| Network/IO error | `RetryableIntegrationException` |
+| Invalid environment URL / serialization failure | `NonRetryableIntegrationException` |
+
+`getProviderStatus` never throws: on any failure it returns a `DOWN` status carrying the error
+message, which drives the "Test connection" result in the form.
+
+## Logging
+
+Operations log with structured context — `credentialId`, the account id (the Dataverse environment
+host), the operation name, and on writes the resulting `contactid` and the changed field keys. The
+client additionally logs status code and request duration at debug level.
+
+## Tests
+
+Three test classes cover the adapter:
+
+- `MicrosoftDynamicsClientTest` — HTTP calls against a `MockWebServer` (OkHttp).
+- `MicrosoftDynamicsProviderTest` — all port methods against a mocked client.
+- `MicrosoftDynamicsCredentialFormTest` — form validation.
+
+Run backend tests with:
+
+```bash
+cd vaadin-spring && mvn test -Pskip-frontend -Dtest=MicrosoftDynamics*
+```

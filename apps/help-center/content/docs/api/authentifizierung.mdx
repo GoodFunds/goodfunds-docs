@@ -1,0 +1,135 @@
+---
+title: Authentifizierung
+description: Wie sich Clients an der GoodFunds-API anmelden – JWT in HttpOnly-Cookies, Login und Token-Erneuerung.
+---
+
+GoodFunds authentifiziert Anfragen über ein **JWT (JSON Web Token)**, das nach erfolgreichem Login
+in einem **HttpOnly-Cookie** gesetzt wird. Der Client muss das Token nicht selbst verwalten – der
+Browser sendet das Cookie automatisch bei jeder Anfrage mit, solange `credentials` aktiviert sind.
+
+<Callout type="info">
+  Viele Endpunkte sind **öffentlich** (`@AnonymousAllowed`) und benötigen keine Anmeldung – z. B.
+  Spenden anlegen, öffentliche Konten und Rankings. Eine Anmeldung brauchst du nur für persönliche
+  oder kontobezogene Daten.
+</Callout>
+
+## Das JWT-Cookie
+
+| Eigenschaft | Wert |
+| --- | --- |
+| Cookie-Name | `jwtToken` |
+| HttpOnly | `true` (kein Zugriff per JavaScript) |
+| Secure | `true` (nur über HTTPS) |
+| SameSite | `Lax` |
+| Pfad | `/` |
+| Algorithmus | RS256 (RSA-Signatur) |
+| Aussteller (`issuer`) | `goodfunds.de` |
+| Claims | `sub` (Username), `userId`, `fullName`, `activeAccountId`, `iat`, `exp` |
+
+Zusätzlich wird ein **Refresh-Token** (Cookie `refreshToken`, ebenfalls HttpOnly) gesetzt und
+serverseitig persistiert. Läuft das Access-Token ab, wird es über das Refresh-Token automatisch
+erneuert; beim Logout wird das Refresh-Token widerrufen.
+
+<Callout type="warn">
+  Weil das Token signiert (RS256), aber **nicht verschlüsselt** ist, gehören keine Geheimnisse in
+  eigene Claims. Die Signatur wird gegen den öffentlichen Schlüssel der Instanz geprüft.
+</Callout>
+
+## Login
+
+`POST /api/v1/auth/login` &nbsp;·&nbsp; öffentlich (`@AnonymousAllowed`)
+
+Bei Erfolg setzt die Antwort die Cookies `jwtToken` und `refreshToken` per `Set-Cookie`-Header.
+
+```bash
+curl -i -X POST https://manager.goodfunds.de/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -c cookies.txt \
+  -d '{
+    "username": "max@example.org",
+    "password": "dein-passwort",
+    "rememberMe": true
+  }'
+```
+
+**Request-Body** (`LoginRequest`):
+
+| Feld | Typ | Beschreibung |
+| --- | --- | --- |
+| `username` | string | Benutzername oder E-Mail |
+| `password` | string | Passwort |
+| `rememberMe` | boolean | Verlängert die Cookie-Lebensdauer |
+
+**Antwort** (`LoginResponse`):
+
+```json
+{
+  "userId": 42,
+  "username": "max@example.org",
+  "fullName": "Max Mustermann",
+  "needsEmailVerification": false
+}
+```
+
+## Authentifizierte Anfragen
+
+Sende das beim Login erhaltene Cookie einfach mit. Mit curl über die gespeicherte Cookie-Datei:
+
+```bash
+curl https://manager.goodfunds.de/api/v1/auth/me -b cookies.txt
+```
+
+Im Browser (z. B. `fetch`) muss `credentials: "include"` gesetzt sein, damit das HttpOnly-Cookie
+mitgeschickt wird:
+
+```js
+const res = await fetch("https://manager.goodfunds.de/api/v1/auth/me", {
+  credentials: "include",
+});
+const me = await res.json();
+```
+
+`GET /api/v1/auth/me` liefert den aktuell angemeldeten Nutzer samt Engagement-Daten zurück. Ohne
+gültiges Cookie ist der Nutzer nicht authentifiziert.
+
+## Registrierung & E-Mail-Bestätigung
+
+Die Registrierung erfolgt zweistufig: Konto anlegen, dann E-Mail bestätigen.
+
+```bash
+curl -X POST https://manager.goodfunds.de/api/v1/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Max",
+    "lastName": "Mustermann",
+    "username": "max",
+    "email": "max@example.org",
+    "password": "ein-sicheres-passwort",
+    "salutation": "HERR"
+  }'
+```
+
+Anschließend versendet GoodFunds eine Bestätigungs-E-Mail mit einem Token. Dieses Token wird an
+`POST /api/v1/auth/verify-email` (`{ "token": "…" }`) gesendet – bei Erfolg wird der Nutzer
+verifiziert und direkt eingeloggt (Cookie gesetzt).
+
+## Logout
+
+`POST /api/v1/auth/logout` widerruft das Refresh-Token und löscht die Cookies:
+
+```bash
+curl -X POST https://manager.goodfunds.de/api/v1/auth/logout -b cookies.txt
+```
+
+## Passwort vergessen
+
+| Endpunkt | Body | Zweck |
+| --- | --- | --- |
+| `POST /api/v1/auth/forgot-password` | `{ "emailOrUsername": "…" }` | Reset-E-Mail anfordern (antwortet immer mit Erfolg) |
+| `POST /api/v1/auth/reset-password` | `{ "token": "…", "password": "…" }` | Neues Passwort mit Token setzen |
+
+<Callout type="info">
+  `forgot-password` und `resend-verification` antworten aus Sicherheitsgründen **immer mit Erfolg** –
+  unabhängig davon, ob die Adresse existiert. So lässt sich nicht herausfinden, welche E-Mails
+  registriert sind.
+</Callout>

@@ -1,0 +1,57 @@
+---
+title: Schreibrichtlinien
+description: Tonalität und Aufbau für alle Artikel im GoodFunds Hilfe-Center.
+---
+
+Diese Seite legt fest, wie wir im Hilfe-Center schreiben. Sie richtet sich an alle, die Artikel
+verfassen. Ziel: Alle Artikel fühlen sich an, als kämen sie aus einer Hand.
+
+## Tonalität
+
+- **Duzen.** Wir sprechen die Leser:innen mit „du" an — freundlich und auf Augenhöhe.
+- **Kurze Sätze.** Ein Gedanke pro Satz. Lieber zwei kurze Sätze als ein langer.
+- **„So machst du X".** Schreib handlungsorientiert und in der Gegenwart. Sag, was zu tun ist, nicht
+  was theoretisch möglich wäre.
+- **Aktiv statt passiv.** „Klicke auf Speichern" statt „Es muss gespeichert werden".
+- **Keine Fachsprache ohne Erklärung.** Technische Begriffe nur, wenn nötig — dann kurz erklären.
+- **Du kennst das Ergebnis.** Sag den Leser:innen früh, was sie am Ende erreicht haben.
+
+## Aufbau eines Artikels
+
+Halte dich an die drei Referenz-Artikel als Muster:
+
+- [Account erstellen](/docs/erste-schritte/account-erstellen) — einfacher Onboarding-Flow.
+- [Spendenformular einbetten](/docs/sammeln/spendenformular-einbetten) — technische Einbettung mit
+  Code.
+- [Microsoft Dynamics 365 verbinden](/docs/integrationen/microsoft-dynamics-365-verbinden) — komplexes
+  Setup über mehrere Schritte.
+
+Empfohlene Struktur:
+
+1. **Einleitung** (2–3 Sätze): Worum geht es, und was hast du danach erreicht?
+2. **Voraussetzungen** (falls nötig): Was brauchst du vorher?
+3. **Schritt für Schritt**: nummerierte Schritte mit der `<Steps>`-Komponente.
+4. **Tipps / Hinweise**: optionale Vertiefung.
+5. **Häufige Fragen**: 2–4 typische Probleme und ihre Lösung.
+
+## Bausteine (MDX-Komponenten)
+
+| Baustein | Wofür |
+| --- | --- |
+| `<Steps>` / `<Step>` | Nummerierte Schritt-für-Schritt-Anleitungen. |
+| `<Callout type="info">` | Hinweise und Tipps. |
+| `<Callout type="warn">` | Warnungen, häufige Fehlerquellen. |
+| `<Cards>` / `<Card>` | Verlinkungen zu nächsten Schritten. |
+| Code-Block (```` ```html ````) | Kopierbare Code-Schnipsel. |
+
+## Sprachen
+
+Jeder Artikel existiert **zweisprachig**: Deutsch (`name.de.mdx`) und Englisch (`name.mdx`). Schreibe
+beide Versionen parallel, damit sie inhaltlich gleich bleiben.
+
+## Bilder & Videos
+
+- Screenshots zeigen genau den beschriebenen Schritt — kein voller Bildschirm, wenn ein Ausschnitt
+  reicht.
+- Solange ein Screenshot fehlt, setze einen Platzhalter mit dem Hinweis „📸 *Screenshot wird ergänzt.*".
+- Lege Bilder unter `public/docs-assets/<sektion>/` ab und referenziere sie mit `/docs-assets/...`.

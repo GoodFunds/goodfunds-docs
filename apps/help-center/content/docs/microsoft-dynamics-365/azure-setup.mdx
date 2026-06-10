@@ -1,0 +1,80 @@
+---
+title: Azure-/Entra-ID-Setup
+description: Eine App in Microsoft Entra ID registrieren, ihr Zugriff auf die Dataverse-Umgebung geben und die vier Zugangsdaten für GoodFunds sammeln.
+---
+
+GoodFunds authentifiziert sich als **App-Registrierung** über den OAuth-2.0-Client-Credentials-Flow
+(Server-zu-Server). Bevor du den Provider in GoodFunds konfigurieren kannst, musst du diese
+Registrierung in Microsoft Entra ID anlegen und sie in Dynamics autorisieren.
+
+Am Ende hast du vier Werte:
+
+| Zugangsdatum | Herkunft |
+| --- | --- |
+| **Tenant-ID** | Entra ID → Übersicht der App-Registrierung |
+| **Client-ID** | Entra ID → Übersicht der App-Registrierung |
+| **Client-Secret** | Entra ID → App-Registrierung → Zertifikate & Geheimnisse |
+| **Environment-URL** | Deine Dynamics-Umgebung, z. B. `https://org123.crm4.dynamics.com` |
+
+## 1. Anwendung registrieren
+
+1. Öffne das [Microsoft Entra Admin Center](https://entra.microsoft.com) (oder Azure-Portal →
+   Microsoft Entra ID).
+2. Gehe zu **App-Registrierungen → Neue Registrierung**.
+3. Vergib einen Namen (z. B. `GoodFunds CRM Integration`).
+4. Lass die Redirect-URI leer — der Client-Credentials-Flow nutzt keine.
+5. Registrieren.
+
+Auf der **Übersichts**-Seite der Registrierung kopierst du:
+
+- **Anwendungs-(Client-)ID** → das ist die **Client-ID**.
+- **Verzeichnis-(Mandanten-)ID** → das ist die **Tenant-ID**.
+
+## 2. Client-Secret erstellen
+
+1. Öffne in der Registrierung **Zertifikate & Geheimnisse → Neuer geheimer Clientschlüssel**.
+2. Beschreibung und Ablaufdatum angeben.
+3. Den **Wert** des Secrets sofort kopieren — er wird nur einmal angezeigt. Das ist das
+   **Client-Secret**.
+
+> Das Secret läuft ab. Notiere das Ablaufdatum und erneuere es rechtzeitig, sonst beginnt der Sync mit
+> einem Authentifizierungsfehler zu scheitern.
+
+## 3. Environment-URL finden
+
+Öffne im [Power Platform Admin Center](https://admin.powerplatform.microsoft.com) deine Umgebung. Die
+**Environment-URL** sieht so aus:
+
+```
+https://org123.crm4.dynamics.com
+```
+
+Verwende nur die Basis-URL — ohne nachgestellten Pfad und ohne abschließenden Schrägstrich.
+
+> **Achtung, versehentliche Leerzeichen.** Ein nachgestelltes Leerzeichen in der Environment-URL ist
+> die häufigste Ursache für den Azure-Fehler `AADSTS70011 invalid_scope`, weil die URL in den
+> OAuth-Scope einfließt (`{environmentUrl}/.default`). GoodFunds entfernt umgebende Leerzeichen und
+> abschließende Schrägstriche vorsorglich, am besten fügst du aber gleich einen sauberen Wert ein.
+
+## 4. App in Dynamics autorisieren
+
+Die App-Registrierung muss als **Anwendungsbenutzer** in der Dynamics-Umgebung existieren, sonst weist
+die API sie selbst mit gültigem Token ab.
+
+1. Öffne im Power Platform Admin Center deine Umgebung → **Einstellungen → Benutzer + Berechtigungen →
+   Anwendungsbenutzer**.
+2. **Neuer App-Benutzer**, wähle die zuvor erstellte App-Registrierung (über ihre Client-ID).
+3. Weise eine **Sicherheitsrolle** zu, die Lesen und Schreiben von Kontakten erlaubt (z. B. eine Rolle
+   mit Erstellen-/Lesen-/Schreiben-/Anfügen-Rechten auf der `Contact`-Entität).
+
+## 5. Überprüfen
+
+Nach der Konfiguration in GoodFunds ruft die Aktion **Verbindung testen** den
+Dataverse-Endpunkt `/WhoAmI` auf. Eine erfolgreiche Antwort (mit `UserId`, `BusinessUnitId`,
+`OrganizationId`) bestätigt, dass:
+
+- Tenant, Client-ID und Secret korrekt sind,
+- die Environment-URL erreichbar ist und
+- der Anwendungsbenutzer Zugriff hat.
+
+Weiter mit der [Konfiguration in GoodFunds](./configuration).

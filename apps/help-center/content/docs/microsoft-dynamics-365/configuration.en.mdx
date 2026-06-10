@@ -1,0 +1,81 @@
+---
+title: Configuration in GoodFunds
+description: Enter your Dynamics credentials, test the connection, and map GoodFunds fields to Dynamics contact attributes.
+---
+
+Configuration happens in the GoodFunds integration wizard for the **Microsoft Dynamics** provider.
+The form is split into two steps: the **credentials** and — after a successful connection test — the
+**field mapping & update strategy**.
+
+## Step 1 — Credentials
+
+| Field | Type | Description |
+| --- | --- | --- |
+| **Tenant ID** | Text | The Entra ID (Azure AD) tenant id of the organization. |
+| **Client ID** | Text | The app registration's application/client id. |
+| **Client Secret** | Password | The app registration client secret. Stored **encrypted**. |
+| **Environment URL** | Text | The Dataverse environment base URL, e.g. `https://org123.crm4.dynamics.com`. |
+
+All four fields are required. The client secret field is masked and the value is persisted encrypted
+in the credential's `configJson`. Leading/trailing whitespace is stripped on save to avoid the
+`AADSTS70011 invalid_scope` pitfall (see [Azure setup](./azure-setup)).
+
+## Test connection
+
+The wizard's **Test connection** action runs the provider's `validateCredentials` →
+`getProviderStatus`, which calls the Dataverse `/WhoAmI` endpoint.
+
+- **Success** — the second step (field mapping + update strategy) is unlocked and the available
+  Dynamics attributes are loaded.
+- **Failure** — the status is reported as `DOWN` with the error message; the mapping controls stay
+  disabled.
+
+## Step 2 — Field mapping
+
+The mapping control has two columns:
+
+- **Left:** GoodFunds contact fields.
+- **Right:** Microsoft Dynamics `contact` attributes, discovered live from your environment's
+  metadata.
+
+This produces a mapping of **`{Dynamics attribute → GoodFunds field}`**, which the CRM sync consumes
+when building each contact payload.
+
+The standard Dynamics contact attributes used by the provider are:
+
+| Dynamics attribute | Meaning | GoodFunds field |
+| --- | --- | --- |
+| `firstname` | First name | firstName |
+| `lastname` | Last name | lastName |
+| `emailaddress1` | Primary email | email |
+| `telephone1` | Phone | phone |
+| `address1_line1` | Street | address.street |
+| `address1_line2` | Address line 2 | — |
+| `address1_postalcode` | Postal code | address.postcode |
+| `address1_city` | City | address.city |
+| `address1_stateorprovince` | State / province | — |
+| `address1_country` | Country | address.country |
+| `birthdate` | Date of birth | birthDate |
+| `salutation` | Salutation | salutation |
+| `contactid` | Dynamics ID (GUID) | externalId |
+
+> Field **discovery** reads the full `contact` attribute set from the Dataverse metadata API, so any
+> custom attributes in your environment are selectable too. Lookup, owner, unique-identifier and
+> virtual attributes are filtered out because they are not directly mappable target fields.
+
+## Contact Update Strategy
+
+Controls how an **existing** Dynamics contact is treated when a GoodFunds contact with the same email
+already exists. (New contacts are always created.)
+
+| Strategy | Behaviour |
+| --- | --- |
+| **SKIP** | Existing contacts are not updated. New form data is ignored. |
+| **UPDATE_IF_EMPTY** | Only empty fields on the Dynamics side are filled. Existing values are kept. |
+| **UPDATE_IF_CHANGED** *(default)* | Fields are updated when the value differs. Existing values are overwritten. |
+
+The merge logic is shared with the rest of the CRM integration via `ContactAttributeMerger`, so the
+behaviour matches the other providers. If the strategy yields no fields to change, the update is
+skipped and reported as a success (no-op).
+
+Continue with the [Architecture & developer reference](./architecture).

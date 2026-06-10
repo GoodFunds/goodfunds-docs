@@ -1,0 +1,61 @@
+---
+title: API-Referenz
+description: Die HTTP-API von GoodFunds – Überblick, Authentifizierung und Endpunkte.
+---
+
+Die **GoodFunds HTTP-API** stellt öffentliche Endpunkte bereit, mit denen du Spenden anstößt,
+Konten und Rankings ausliest und Webhooks empfängst. Sie ergänzt die interne Anwendung – du brauchst
+also keine UI, um GoodFunds in dein System zu integrieren.
+
+<Callout type="info">
+  Die meisten internen Funktionen der Anwendung laufen über Hilla-RPC (`@BrowserCallable`) und sind
+  nicht als stabile öffentliche API gedacht. Für Integrationen verwende die unter
+  [Endpunkte](./endpunkte) dokumentierten REST-Endpunkte unter `/api/v1/…`.
+</Callout>
+
+## Basis-URL
+
+Alle Endpunkte liegen relativ zur Domain deiner GoodFunds-Instanz:
+
+```
+https://manager.goodfunds.de
+```
+
+REST-Endpunkte sind versioniert und beginnen mit `/api/v1/`. Öffentliche, mandantengebundene
+Endpunkte (z. B. Webhooks) enthalten die Konto-ID im Pfad: `/api/v1/public/{accountId}/…`.
+
+## Überblick
+
+| Bereich | Pfad-Präfix | Auth | Beschreibung |
+| --- | --- | --- | --- |
+| Authentifizierung | `/api/v1/auth` | öffentlich / Cookie | Login, Registrierung, Passwort-Reset – siehe [Authentifizierung](./authentifizierung) |
+| Spenden | `/api/v1/donations` | öffentlich | Spenden anlegen und Status abfragen |
+| Plattform-Konten | `/api/v1/platform/accounts` | öffentlich | Öffentliche Organisationsprofile auflisten/abrufen |
+| Engagement | `/api/v1/platform/engagement` | öffentlich | Punkte und Rankings |
+| Webhooks | `/api/v1/public/{accountId}/webhooks/…` | Signatur / Secret | Eingehende Zahlungs-Events |
+| OAuth-Callback | `/api/oauth/callback` | öffentlich | Rückleitung für Integrations-Logins |
+
+## Datenformat
+
+Anfragen und Antworten verwenden **JSON** (`Content-Type: application/json`), sofern nicht anders
+angegeben (Webhooks und Datei-Uploads bilden Ausnahmen). Viele Antworten sind in einen
+`ControllerResponse`-Umschlag verpackt:
+
+```json
+{
+  "success": true,
+  "message": null,
+  "data": { /* die eigentliche Nutzlast */ }
+}
+```
+
+## Erste Anfrage in unter 5 Minuten
+
+Ein öffentliches Engagement-Ranking abrufen – ganz ohne Authentifizierung:
+
+```bash
+curl "https://manager.goodfunds.de/api/v1/platform/engagement/ranking?limit=10"
+```
+
+Weiter geht es mit der [Authentifizierung](./authentifizierung) und der vollständigen
+[Endpunkt-Referenz](./endpunkte).

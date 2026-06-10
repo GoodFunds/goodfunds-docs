@@ -1,0 +1,6 @@
+{
+  "title": "API",
+  "icon": "Webhook",
+  "root": true,
+  "pages": ["index"]
+}

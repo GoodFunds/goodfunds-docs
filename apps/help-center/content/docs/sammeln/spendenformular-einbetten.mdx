@@ -1,0 +1,135 @@
+---
+title: Spendenformular in deine Website einbetten
+description: Binde ein GoodFunds-Spendenformular mit zwei Code-Schnipseln direkt auf deiner eigenen Website ein.
+---
+
+Du kannst dein GoodFunds-Spendenformular direkt auf deiner eigenen Website anzeigen — egal ob WordPress,
+Webflow, TYPO3 oder selbstgebaut. Dafür fügst du zwei kleine Code-Schnipsel ein: einmal den
+**Installationscode** und einmal den **Embed-Code** des Formulars.
+
+<Callout type="info">
+  Du brauchst keine Programmierkenntnisse. Du kopierst zwei Schnipsel aus GoodFunds und fügst sie an
+  der richtigen Stelle deiner Website ein. Wer eine Website mit GoodFunds-[Landing Pages](./landing-pages)
+  baut, braucht das hier nicht — dort ist das Formular schon eingebaut.
+</Callout>
+
+## So funktioniert es
+
+Das Einbetten besteht aus zwei Teilen:
+
+1. **Installationscode** — ein `<script>`-Tag, das die GoodFunds-Komponenten lädt. Den fügst du
+   **einmal pro Website** ein.
+2. **Embed-Code** — ein kurzes HTML-Element für genau dieses Spendenformular. Den fügst du **auf jeder
+   Seite** ein, auf der das Formular erscheinen soll.
+
+## Schritt für Schritt
+
+<Steps>
+
+<Step>
+
+### Spendenformular in GoodFunds erstellen
+
+Erstelle in GoodFunds ein Conversion-Element vom Typ **Spendenformular** und gestalte es so, wie du es
+brauchst. Wie das geht, liest du unter [Kampagne erstellen](./kampagne-erstellen).
+
+</Step>
+
+<Step>
+
+### Reiter „Veröffentlichen" öffnen
+
+Öffne dein Spendenformular und wechsle auf den Reiter **Veröffentlichen** (engl. *Publishing*). Dort
+findest du zwei Felder: **Website-Installationscode** und **Embed-Code**.
+
+![Der Reiter „Veröffentlichen" mit Installations- und Embed-Code](/docs-assets/sammeln/spendenformular-publishing.png)
+
+> 📸 *Screenshot wird ergänzt.*
+
+</Step>
+
+<Step>
+
+### Installationscode in deine Website einfügen
+
+Kopiere den **Website-Installationscode**. Er sieht so aus:
+
+```html
+<script type="text/javascript" src="https://manager.goodfunds.de/goodfunds-components.es.js"></script>
+```
+
+Füge ihn **einmal** in deine Website ein — am besten im `<head>`-Bereich oder direkt vor dem
+schließenden `</body>`-Tag. In vielen CMS gibt es dafür ein Feld wie „Eigener Code im Header" oder ein
+HTML-Snippet-Element.
+
+<Callout type="info">
+  Kopiere den Code immer direkt aus deinem GoodFunds-Account. So passt die Adresse garantiert zu
+  deiner Instanz.
+</Callout>
+
+</Step>
+
+<Step>
+
+### Embed-Code an die gewünschte Stelle setzen
+
+Kopiere den **Embed-Code** und füge ihn dort ein, wo das Formular erscheinen soll. Er sieht so aus:
+
+```html
+<gf-donation-form componentId="abc123"></gf-donation-form>
+```
+
+Die `componentId` ist bei deinem Formular bereits korrekt eingetragen — kopiere den Code unverändert.
+
+Bietet dein Styleguide einen Dunkelmodus an, zeigt GoodFunds zusätzlich einen Embed-Code für **Dark
+Mode**:
+
+```html
+<gf-donation-form componentId="abc123" theme="dark"></gf-donation-form>
+```
+
+</Step>
+
+<Step>
+
+### Speichern und testen
+
+Speichere deine Website-Seite und öffne sie im Browser. Das Spendenformular sollte nun erscheinen.
+Mach einen Test: Lässt sich das Formular ausfüllen und absenden?
+
+</Step>
+
+</Steps>
+
+## Live-Demo
+
+So sieht ein eingebettetes Spendenformular auf einer Website aus:
+
+{/* Auf dem Live-Help-Center wird hier die echte Webkomponente gerendert. Dazu lädt die Doku-Seite
+    den Installationscode und zeigt das <gf-donation-form>-Element mit einer Demo-componentId. */}
+
+> 🔧 *Interaktive Live-Demo wird ergänzt.* Sie nutzt denselben Embed-Code wie oben — geladen mit
+> einer Demo-`componentId`.
+
+## Tipps
+
+- **Aussehen anpassen:** Farben, Schrift und Rundungen steuerst du über deinen [Styleguide](/docs/verwalten/branding)
+  in GoodFunds — nicht über CSS auf deiner Website.
+- **Mehrere Formulare:** Du kannst beliebig viele Formulare einbetten. Der Installationscode muss nur
+  einmal pro Seite vorhanden sein, der Embed-Code pro Formular.
+- **Inhalte ändern:** Anpassungen am Formular in GoodFunds erscheinen automatisch auf deiner Website —
+  du musst den Code nicht erneut einfügen.
+
+## Häufige Fragen
+
+**Das Formular wird nicht angezeigt.**
+Prüfe, ob der Installationscode (das `<script>`-Tag) wirklich auf der Seite vorhanden ist. Ohne ihn
+kann der Embed-Code nicht geladen werden.
+
+**Kann ich das Formular auch in einem Pop-up zeigen?**
+Ja. Sprich uns an — neben dem eingebetteten Formular gibt es auch eine Button-Variante, die das
+Formular in einem Overlay öffnet.
+
+**Beeinflusst das Formular die Ladezeit meiner Website?**
+Das Skript wird asynchron geladen und ist sehr klein. Auf die Ladezeit deiner Seite hat es praktisch
+keinen Einfluss.

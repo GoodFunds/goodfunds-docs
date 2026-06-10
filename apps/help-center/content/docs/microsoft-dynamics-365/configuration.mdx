@@ -1,0 +1,83 @@
+---
+title: Konfiguration in GoodFunds
+description: Dynamics-Zugangsdaten eingeben, Verbindung testen und GoodFunds-Felder auf Dynamics-Kontaktattribute mappen.
+---
+
+Die Konfiguration erfolgt im GoodFunds-Integrationsassistenten für den Provider **Microsoft
+Dynamics**. Das Formular ist zweistufig: zuerst die **Zugangsdaten**, nach erfolgreichem
+Verbindungstest dann **Feld-Mapping & Update-Strategie**.
+
+## Schritt 1 — Zugangsdaten
+
+| Feld | Typ | Beschreibung |
+| --- | --- | --- |
+| **Tenant-ID** | Text | Die Entra-ID-(Azure-AD-)Tenant-ID der Organisation. |
+| **Client-ID** | Text | Die Anwendungs-/Client-ID der App-Registrierung. |
+| **Client-Secret** | Passwort | Das Client-Secret der App-Registrierung. **Verschlüsselt** gespeichert. |
+| **Environment-URL** | Text | Die Basis-URL der Dataverse-Umgebung, z. B. `https://org123.crm4.dynamics.com`. |
+
+Alle vier Felder sind Pflichtfelder. Das Client-Secret-Feld ist maskiert und der Wert wird
+verschlüsselt im `configJson` der Zugangsdaten gespeichert. Führende/abschließende Leerzeichen werden
+beim Speichern entfernt, um die Falle `AADSTS70011 invalid_scope` zu vermeiden (siehe
+[Azure-Setup](./azure-setup)).
+
+## Verbindung testen
+
+Die Aktion **Verbindung testen** des Assistenten führt `validateCredentials` → `getProviderStatus` des
+Providers aus, was den Dataverse-Endpunkt `/WhoAmI` aufruft.
+
+- **Erfolg** — der zweite Schritt (Feld-Mapping + Update-Strategie) wird freigeschaltet und die
+  verfügbaren Dynamics-Attribute werden geladen.
+- **Fehler** — der Status wird als `DOWN` mit der Fehlermeldung gemeldet; die Mapping-Steuerelemente
+  bleiben deaktiviert.
+
+## Schritt 2 — Feld-Mapping
+
+Das Mapping-Steuerelement hat zwei Spalten:
+
+- **Links:** GoodFunds-Kontaktfelder.
+- **Rechts:** Microsoft-Dynamics-`contact`-Attribute, live aus den Metadaten deiner Umgebung
+  erkannt.
+
+Daraus entsteht ein Mapping **`{Dynamics-Attribut → GoodFunds-Feld}`**, das der CRM-Sync beim Bauen
+jedes Kontakt-Payloads verwendet.
+
+Die vom Provider genutzten Standard-Dynamics-Kontaktattribute sind:
+
+| Dynamics-Attribut | Bedeutung | GoodFunds-Feld |
+| --- | --- | --- |
+| `firstname` | Vorname | firstName |
+| `lastname` | Nachname | lastName |
+| `emailaddress1` | Primäre E-Mail | email |
+| `telephone1` | Telefon | phone |
+| `address1_line1` | Straße | address.street |
+| `address1_line2` | Adresszeile 2 | — |
+| `address1_postalcode` | PLZ | address.postcode |
+| `address1_city` | Stadt | address.city |
+| `address1_stateorprovince` | Bundesland / Region | — |
+| `address1_country` | Land | address.country |
+| `birthdate` | Geburtsdatum | birthDate |
+| `salutation` | Anrede | salutation |
+| `contactid` | Dynamics-ID (GUID) | externalId |
+
+> Die **Feld-Erkennung** liest den vollständigen `contact`-Attributsatz aus der
+> Dataverse-Metadaten-API, sodass auch benutzerdefinierte Attribute deiner Umgebung wählbar sind.
+> Lookup-, Owner-, Uniqueidentifier- und virtuelle Attribute werden herausgefiltert, da sie keine
+> direkt mappbaren Zielfelder sind.
+
+## Kontaktdaten-Aktualisierung (Update-Strategie)
+
+Steuert, wie ein **bestehender** Dynamics-Kontakt behandelt wird, wenn bereits ein Kontakt mit
+derselben E-Mail existiert. (Neue Kontakte werden immer angelegt.)
+
+| Strategie | Verhalten |
+| --- | --- |
+| **SKIP** | Bestehende Kontakte werden nicht aktualisiert. Neue Formulardaten werden ignoriert. |
+| **UPDATE_IF_EMPTY** | Nur leere Felder auf der Dynamics-Seite werden befüllt. Bestehende Werte bleiben erhalten. |
+| **UPDATE_IF_CHANGED** *(Standard)* | Felder werden aktualisiert, wenn sich der Wert unterscheidet. Bestehende Werte werden überschrieben. |
+
+Die Merge-Logik wird über `ContactAttributeMerger` mit dem Rest der CRM-Integration geteilt, das
+Verhalten entspricht also den anderen Providern. Ergibt die Strategie keine zu ändernden Felder, wird
+das Update übersprungen und als Erfolg (No-op) gemeldet.
+
+Weiter mit der [Architektur- & Entwickler-Referenz](./architecture).

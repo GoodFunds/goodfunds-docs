@@ -1,0 +1,85 @@
+---
+title: "Konzept: Developer-Dokumentation (API + SDK) auf Scalar"
+description: Strategie-Ticket GFL-131 für die entwicklerorientierte Dokumentation.
+---
+
+Strategie-Ticket für die **entwicklerorientierte** Dokumentation. Eigenständige Plattform getrennt vom Help Center, optimiert für externe Integratoren/Agentur-Devs.
+
+---
+
+## Ziel
+
+Ein professionelles Developer Portal für externe Entwickler:innen, die GoodFunds-APIs konsumieren oder das SDK nutzen. Fokus: „Wie integriere ich GoodFunds in mein System?"
+
+## Scope
+
+**Drin:**
+
+* REST-API-Referenz (OpenAPI 3.1, auto-generiert)
+* SDK-Dokumentation (Installation, Auth, Beispiele) — sofern SDK existiert/geplant
+* Authentifizierung & API-Keys
+* Webhooks (Event-Typen, Payload-Schemas, Signaturen-Verifikation)
+* Code-Beispiele in mehreren Sprachen (curl, JS/TS, Python, ggf. PHP/Java)
+* Rate Limits, Quotas, Fehlercodes
+* API-Changelog & Versionierung
+* „Getting Started" für Entwickler (in 5 Minuten erste Anfrage)
+
+**Nicht drin (geht in Nextra-Ticket):**
+
+* Anwender-Anleitungen
+* Marketing-Inhalte
+* Onboarding für NGO-Admins
+
+## Zielgruppe
+
+* **Primär:** Externe Entwickler:innen bei Integrations-Partnern, Agenturen mit Tech-Team
+* **Sekundär:** Interne Devs, die als Referenz nachschlagen
+
+## Tech-Stack
+
+* **Plattform:** Scalar — _welche Variante ist noch offen_ (siehe offene Fragen)
+
+    * **Option A:** Scalar Cloud (gehostet, managed, eigene Domain, Pricing nach Volumen)
+    * **Option B:** Self-hosted Static Build (`@scalar/api-reference` als HTML, auf eigener Infra deployen — kostenlos, mehr Aufwand)
+
+* **OpenAPI-Spec:** Auto-generiert aus Spring Boot via `springdoc-openapi`
+* **Hosting (falls self-hosted):** Vercel/Netlify/eigene Infra
+
+## OpenAPI-Generierung
+
+* `springdoc-openapi` in `vaadin-spring/pom.xml` einbauen
+* Spec wird zur Build-Zeit unter `/v3/api-docs` exponiert
+* Annotationen an REST-Controllern ergänzen (Beschreibungen, Beispiele, Auth-Schemas)
+* CI-Job zieht Spec und pusht sie zu Scalar (oder triggert Rebuild bei self-hosted)
+
+## Cross-Linking zum Help Center
+
+* Top-Nav-Link „← Zur Anwendungs-Hilfe"
+* Innerhalb von „Microsoft Dynamics verbinden"-Artikel im Help Center: „Du willst die API direkt nutzen statt der UI? → [link]"
+* Einheitliches Branding/Header trotz getrennter Plattformen
+
+## Offene Fragen — bitte klären
+
+1. **Scalar Cloud vs. self-hosted:** Cloud spart Aufwand, kostet aber laufend ($12+/Monat je nach Plan). Self-hosted ist kostenlos, aber Versionierung/Editor/Auth musst du selbst bauen. **→ Welcher Aufwand-Kosten-Trade-off ist gewünscht?**
+2. **Domain:** `developer.goodfunds.de`, `api.goodfunds.de`, `docs.goodfunds.de/developer`? (Beeinflusst Markenwirkung.)
+3. **i18n für Developer-Doku:** Nur EN (Industriestandard) oder auch DE? — _Scalars i18n-Support ist eingeschränkter als Nextras; bei „nur EN" ist Scalar deutlich einfacher._
+4. **Auth-Modell:** Komplett öffentlich, oder Login-geschützt für eingeloggte Developer/Partner-Accounts?
+5. **Welche APIs sind überhaupt für externe Entwickler gedacht?** Aktuell laufen die meisten Endpoints über Hilla (`@BrowserCallable`, intern). Gibt es schon dedizierte Public-REST-Endpoints? Wenn ja, wo? Wenn nein → vorher klären, ob ein Public-API-Surface überhaupt existiert/aufgebaut werden soll.
+6. **SDK:** Gibt es ein offizielles GoodFunds-SDK? In welchen Sprachen? Wenn nein — soll die Doku eines vorbereiten (z.B. JS/TS via OpenAPI-Generator) oder „nur" curl/HTTP-Beispiele liefern?
+7. **Versionierung:** Wird die API versioniert (v1/v2 parallel) oder gibt es nur „latest"? — Beeinflusst Scalar-Setup massiv.
+8. **Webhooks:** Existieren schon? Welches Signatur-Schema? Welche Events?
+9. **Rate Limiting:** Ist im Backend implementiert oder geplant? Welche Limits sollen dokumentiert werden?
+10. **API-Changelog:** Wie wird der gepflegt? Hand-kuratiert in Markdown, oder aus Spec-Diffs auto-generiert (z.B. via Bump.sh als Ergänzung)?
+
+## Verdacht: das könnte ein größeres Stück Arbeit sein als angenommen
+
+Wenn aktuell **kein dediziertes Public-API-Surface existiert** (Frage 5), ist das eigentliche Engpass nicht die Doku-Plattform, sondern die API selbst — Endpoints definieren, stabilisieren, versionieren, dokumentieren. Das wäre ein eigenes Epic, nicht ein Sub-Task von GFL-120.
+
+**→ Bitte zuerst Frage 5 beantworten.** Davon hängt ab, ob dieses Ticket ein „Scalar einrichten"-Ticket ist oder der Auftakt eines viel größeren Projekts „GoodFunds Public API".
+
+## Definition of Done für dieses Konzept-Ticket
+
+* Alle offenen Fragen beantwortet
+* Bei Bedarf weiteres Epic „Public API definieren" angelegt
+* Phasen-Tickets für Scalar-Setup angelegt (analog zu Nextra-Phasen)
+* Strategie mit Tim/Stakeholdern abgestimmt

@@ -1,0 +1,55 @@
+---
+title: Writing guidelines
+description: Tone and structure for every article in the GoodFunds Help Center.
+---
+
+This page defines how we write in the Help Center. It's for everyone who writes articles. The goal:
+every article should feel like it came from the same author.
+
+## Tone
+
+- **Be informal.** In German we use "du"; in English, a friendly, direct "you" — peer to peer.
+- **Short sentences.** One idea per sentence. Two short sentences beat one long one.
+- **"Here's how you do X."** Write action-oriented, in the present tense. Say what to do, not what is
+  theoretically possible.
+- **Active, not passive.** "Click Save", not "It must be saved".
+- **No jargon without explanation.** Use technical terms only when needed — then explain them briefly.
+- **Lead with the outcome.** Tell readers early what they'll have achieved by the end.
+
+## Article structure
+
+Follow the three reference articles as your template:
+
+- [Create an account](/docs/erste-schritte/account-erstellen) — a simple onboarding flow.
+- [Embed a donation form](/docs/sammeln/spendenformular-einbetten) — a technical embed with code.
+- [Connect Microsoft Dynamics 365](/docs/integrationen/microsoft-dynamics-365-verbinden) — a complex,
+  multi-step setup.
+
+Recommended structure:
+
+1. **Intro** (2–3 sentences): what it's about, and what you'll have achieved.
+2. **Before you start** (if needed): what you need beforehand.
+3. **Step by step**: numbered steps using the `<Steps>` component.
+4. **Tips / notes**: optional depth.
+5. **Frequently asked questions**: 2–4 common problems and their fixes.
+
+## Building blocks (MDX components)
+
+| Block | Use for |
+| --- | --- |
+| `<Steps>` / `<Step>` | Numbered step-by-step instructions. |
+| `<Callout type="info">` | Notes and tips. |
+| `<Callout type="warn">` | Warnings, common pitfalls. |
+| `<Cards>` / `<Card>` | Links to next steps. |
+| Code block (```` ```html ````) | Copy-paste snippets. |
+
+## Languages
+
+Every article exists in **both languages**: German (`name.de.mdx`) and English (`name.mdx`). Write both
+versions in parallel so they stay in sync.
+
+## Images & videos
+
+- Screenshots show exactly the step being described — not a full screen when a crop will do.
+- While a screenshot is missing, add a placeholder with the note "📸 *Screenshot to be added.*".
+- Store images under `public/docs-assets/<section>/` and reference them with `/docs-assets/...`.

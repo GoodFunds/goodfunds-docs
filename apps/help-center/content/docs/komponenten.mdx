@@ -1,0 +1,98 @@
+---
+title: Komponenten
+description: Playground für die wiederverwendbaren MDX-Komponenten des Help Centers.
+---
+
+Diese Seite dokumentiert alle wiederverwendbaren MDX-Komponenten und zeigt sie live.
+Die Komponenten sind global registriert und können in jeder MDX-Seite ohne Import
+verwendet werden.
+
+## Steps
+
+Nummerierte Schritt-für-Schritt-Anleitungen.
+
+<Steps>
+<Step>
+
+### Konto anlegen
+
+Registriere dich mit deiner E-Mail-Adresse und bestätige den Bestätigungslink.
+
+</Step>
+<Step>
+
+### Organisation einrichten
+
+Lege deine Organisation an und lade dein Team ein.
+
+</Step>
+<Step>
+
+### Erste Kampagne starten
+
+Erstelle eine Kampagne und teile den Spendenlink.
+
+</Step>
+</Steps>
+
+## RoleHint
+
+Hinweise für eine bestimmte Zielgruppe – NGO, Agentur oder Plattform-Nutzer:innen.
+
+<RoleHint role="ngo">
+Als NGO findest du hier die Grundlagen zum Sammeln von Spenden.
+</RoleHint>
+
+<RoleHint role="agency">
+Agenturen verwalten mehrere Organisationen über ein zentrales Konto.
+</RoleHint>
+
+<RoleHint role="platform">
+Plattform-Nutzer:innen bauen eigene Anwendungen über die API und das SDK.
+</RoleHint>
+
+## CodeTabs
+
+Tabs für API-Beispiele in cURL, JavaScript, Python und Java.
+
+<CodeTabs
+  tabs={{
+    curl: `curl https://api.goodfunds.example/v1/donations \\
+  -H "Authorization: Bearer $TOKEN"`,
+    js: `const res = await fetch("https://api.goodfunds.example/v1/donations", {
+  headers: { Authorization: \`Bearer \${token}\` },
+});
+const donations = await res.json();`,
+    python: `import requests
+
+res = requests.get(
+    "https://api.goodfunds.example/v1/donations",
+    headers={"Authorization": f"Bearer {token}"},
+)
+donations = res.json()`,
+    java: `HttpRequest req = HttpRequest.newBuilder()
+    .uri(URI.create("https://api.goodfunds.example/v1/donations"))
+    .header("Authorization", "Bearer " + token)
+    .build();`,
+  }}
+/>
+
+## VideoEmbed
+
+Bettet ein YouTube- oder Loom-Video responsiv ein.
+
+<VideoEmbed url="https://www.youtube.com/watch?v=dQw4w9WgXcQ" title="Beispielvideo" />
+
+## ScreenshotZoom
+
+Screenshot mit Klick-zum-Zoomen und optionalen nummerierten Markern.
+
+<ScreenshotZoom
+  src="https://placehold.co/1200x675/png?text=GoodFunds+Dashboard"
+  alt="GoodFunds Dashboard"
+  caption="Das GoodFunds-Dashboard mit markierten Bereichen"
+  markers={[
+    { x: 22, y: 38, label: 'Navigation' },
+    { x: 68, y: 55, label: 'Spendenliste' },
+  ]}
+/>

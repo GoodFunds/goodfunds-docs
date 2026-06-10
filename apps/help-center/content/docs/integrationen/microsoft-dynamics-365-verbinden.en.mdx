@@ -1,0 +1,179 @@
+---
+title: Connect Microsoft Dynamics 365
+description: Connect GoodFunds to Microsoft Dynamics 365 so contacts are pushed into your CRM automatically.
+---
+
+If your organization uses **Microsoft Dynamics 365**, you can connect GoodFunds to it. New contacts
+from GoodFunds then land in your Dynamics CRM automatically — and existing ones stay up to date.
+
+Setup takes a little longer than other integrations, because Microsoft requires its own app
+registration for security. We'll walk you through it step by step.
+
+<Callout type="info">
+  For the first steps you'll need access to **Microsoft Entra ID** (formerly "Azure AD") and to your
+  **Dynamics 365 account** — usually your IT or Microsoft administrator. Consider scheduling a short
+  call with whoever manages that.
+</Callout>
+
+## What you'll need in the end
+
+You'll collect four values and enter them into GoodFunds afterwards:
+
+| Value | What is it? |
+| --- | --- |
+| **Tenant ID** | The ID of your Microsoft organization. |
+| **Client ID** | The ID of the app registration GoodFunds uses. |
+| **Client Secret** | The password for that app registration. |
+| **Environment URL** | The address of your Dynamics environment, e.g. `https://org123.crm4.dynamics.com`. |
+
+## Part 1 — Prepare in Microsoft
+
+<Callout type="warn">
+  These steps happen in the Microsoft admin tools, not in GoodFunds. If you don't have access there,
+  hand this section to your IT team.
+</Callout>
+
+<Steps>
+
+<Step>
+
+### Register an app
+
+In the [Microsoft Entra admin center](https://entra.microsoft.com), under **App registrations**,
+register a new app (e.g. "GoodFunds CRM"). From the overview page, note the **Client ID** and the
+**Tenant ID**.
+
+</Step>
+
+<Step>
+
+### Create a secret
+
+In the app, under **Certificates & secrets**, create a new client secret and copy its **Value**
+immediately — it's only shown once. This is your **Client Secret**.
+
+<Callout type="warn">
+  The secret expires after a while. Note the expiry date — once it lapses you'll need to add a new one
+  in GoodFunds, otherwise the sync stops.
+</Callout>
+
+</Step>
+
+<Step>
+
+### Find the Environment URL
+
+Find the **Environment URL** in the
+[Power Platform admin center](https://admin.powerplatform.microsoft.com) under your environment. It
+looks like `https://org123.crm4.dynamics.com`. Use just this base address, with no extra path.
+
+</Step>
+
+<Step>
+
+### Authorize the app in Dynamics
+
+Add the app in Dynamics as an **application user** and give it a role that can read and write contacts.
+Without this step, GoodFunds can't write data even with valid credentials.
+
+</Step>
+
+</Steps>
+
+<Callout type="info">
+  The technical details for these Microsoft steps (exact click paths, permissions, OAuth) live in the
+  developer documentation under
+  [Microsoft Dynamics 365 → Azure / Entra ID Setup](/docs/microsoft-dynamics-365/azure-setup).
+</Callout>
+
+## Part 2 — Connect in GoodFunds
+
+<Steps>
+
+<Step>
+
+### Create the integration
+
+In GoodFunds, open **Integrations**, choose **Microsoft Dynamics**, and create a new connection.
+
+</Step>
+
+<Step>
+
+### Enter your credentials
+
+Enter the four values you collected: **Tenant ID**, **Client ID**, **Client Secret**, and
+**Environment URL**.
+
+<Callout type="warn">
+  Watch out for stray spaces when pasting — especially at the end of the Environment URL. An extra
+  space is the most common cause of a failed connection.
+</Callout>
+
+![The Microsoft Dynamics credentials form in GoodFunds](/docs-assets/integrationen/dynamics-credentials.png)
+
+> 📸 *Screenshot to be added.*
+
+</Step>
+
+<Step>
+
+### Test the connection
+
+Click **Test connection**. GoodFunds checks that the credentials are correct and your Dynamics
+environment is reachable. You can only map fields after a successful test.
+
+</Step>
+
+<Step>
+
+### Map your fields
+
+Decide which GoodFunds field is written to which Dynamics field — for example first name → `firstname`,
+email → `emailaddress1`. GoodFunds suggests the fields available in your environment automatically.
+
+</Step>
+
+<Step>
+
+### Choose an update strategy
+
+Decide how GoodFunds treats **existing** contacts:
+
+- **Skip** — existing contacts are left unchanged.
+- **Fill empty fields only** — existing values in Dynamics are kept.
+- **Update if changed** *(default)* — differing values are overwritten.
+
+</Step>
+
+<Step>
+
+### Save
+
+Save the integration. From now on, GoodFunds pushes new contacts into your Dynamics CRM automatically.
+
+</Step>
+
+</Steps>
+
+## How the sync works
+
+GoodFunds looks up each contact by **email address** in Dynamics first:
+
+- **Already there?** It's updated according to your chosen strategy.
+- **Not there yet?** It's created.
+
+## Frequently asked questions
+
+**The connection fails even though all the data is correct.**
+First check the Environment URL for a stray space at the end. Also make sure the app is authorized in
+Dynamics as an application user with write permissions (Part 1, step 4).
+
+**Contacts suddenly stopped syncing.**
+The client secret has probably expired. Create a new one in Microsoft and enter it in GoodFunds.
+
+**Will existing contacts be overwritten?**
+That depends on your update strategy. With **Skip**, everything in Dynamics stays as it is.
+
+**I'm a developer and want to know what happens technically.**
+See the developer documentation: [Microsoft Dynamics 365 (Developer)](/docs/microsoft-dynamics-365).

@@ -1,0 +1,132 @@
+---
+title: Embed a donation form into your website
+description: Add a GoodFunds donation form to your own website with two code snippets.
+---
+
+You can show your GoodFunds donation form directly on your own website — whether it runs on WordPress,
+Webflow, TYPO3, or a custom build. You'll add two small snippets: the **installation code** and the
+form's **embed code**.
+
+<Callout type="info">
+  No coding skills needed. You copy two snippets from GoodFunds and paste them into the right place on
+  your website. If you build your site with GoodFunds [landing pages](./landing-pages), you don't need
+  this — the form is already built in there.
+</Callout>
+
+## How it works
+
+Embedding has two parts:
+
+1. **Installation code** — a `<script>` tag that loads the GoodFunds components. Add it **once per
+   website**.
+2. **Embed code** — a short HTML element for this specific donation form. Add it on **every page**
+   where the form should appear.
+
+## Step by step
+
+<Steps>
+
+<Step>
+
+### Create a donation form in GoodFunds
+
+In GoodFunds, create a conversion element of type **donation form** and design it the way you want.
+See [Create a campaign](./kampagne-erstellen) for how to do that.
+
+</Step>
+
+<Step>
+
+### Open the "Publishing" tab
+
+Open your donation form and switch to the **Publishing** tab. There you'll find two fields: **Website
+Installation Code** and **Embed Code**.
+
+![The "Publishing" tab showing the installation and embed code](/docs-assets/sammeln/spendenformular-publishing.png)
+
+> 📸 *Screenshot to be added.*
+
+</Step>
+
+<Step>
+
+### Add the installation code to your website
+
+Copy the **Website Installation Code**. It looks like this:
+
+```html
+<script type="text/javascript" src="https://manager.goodfunds.de/goodfunds-components.es.js"></script>
+```
+
+Add it **once** to your website — ideally in the `<head>` section or right before the closing
+`</body>` tag. Most CMSs have a field for this, such as "Custom header code" or an HTML snippet block.
+
+<Callout type="info">
+  Always copy the code straight from your GoodFunds account, so the address matches your instance.
+</Callout>
+
+</Step>
+
+<Step>
+
+### Place the embed code where you want the form
+
+Copy the **Embed Code** and paste it where the form should appear. It looks like this:
+
+```html
+<gf-donation-form componentId="abc123"></gf-donation-form>
+```
+
+The `componentId` is already filled in for your form — copy the code as-is.
+
+If your styleguide offers a dark mode, GoodFunds also shows a **dark mode** embed code:
+
+```html
+<gf-donation-form componentId="abc123" theme="dark"></gf-donation-form>
+```
+
+</Step>
+
+<Step>
+
+### Save and test
+
+Save your page and open it in a browser. The donation form should now appear. Run a test: can you
+fill in and submit the form?
+
+</Step>
+
+</Steps>
+
+## Live demo
+
+Here's what an embedded donation form looks like on a website:
+
+{/* On the live Help Center the real web component is rendered here. The docs page loads the
+    installation code and shows the <gf-donation-form> element with a demo componentId. */}
+
+> 🔧 *Interactive live demo to be added.* It uses the same embed code as above — loaded with a demo
+> `componentId`.
+
+## Tips
+
+- **Customize the look:** Control colors, fonts, and corners through your [styleguide](/docs/verwalten/branding)
+  in GoodFunds — not with CSS on your website.
+- **Multiple forms:** You can embed as many forms as you like. The installation code only needs to be
+  on the page once; the embed code goes in once per form.
+- **Editing content:** Changes you make to the form in GoodFunds appear on your website automatically —
+  no need to paste the code again.
+
+## Frequently asked questions
+
+**The form doesn't show up.**
+Check that the installation code (the `<script>` tag) is actually on the page. Without it, the embed
+code can't load.
+
+**Can I show the form in a pop-up?**
+Yes. Get in touch — besides the embedded form there's also a button variant that opens the form in an
+overlay.
+
+**Does the form slow down my website?**
+The script loads asynchronously and is very small. It has practically no effect on your page's load
+time.

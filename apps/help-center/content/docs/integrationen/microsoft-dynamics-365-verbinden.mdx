@@ -1,0 +1,183 @@
+---
+title: Microsoft Dynamics 365 verbinden
+description: Verbinde GoodFunds mit Microsoft Dynamics 365, damit Kontakte automatisch in dein CRM übertragen werden.
+---
+
+Wenn deine Organisation **Microsoft Dynamics 365** nutzt, kannst du GoodFunds damit verbinden. Neue
+Kontakte aus GoodFunds landen dann automatisch in deinem Dynamics-CRM — bestehende werden aktuell
+gehalten.
+
+Die Einrichtung dauert etwas länger als bei anderen Integrationen, weil Microsoft aus Sicherheitsgründen
+eine eigene App-Registrierung verlangt. Wir führen dich Schritt für Schritt durch.
+
+<Callout type="info">
+  Für die ersten Schritte brauchst du Zugriff auf **Microsoft Entra ID** (früher „Azure AD") und auf
+  euer **Dynamics-365-Konto** — meist hat das eure IT oder Microsoft-Administration. Plane dafür ggf.
+  einen kurzen Termin mit der zuständigen Person ein.
+</Callout>
+
+## Was du am Ende brauchst
+
+Du sammelst vier Werte, die du anschließend in GoodFunds einträgst:
+
+| Wert | Was ist das? |
+| --- | --- |
+| **Tenant-ID** | Die ID eurer Microsoft-Organisation. |
+| **Client-ID** | Die ID der App-Registrierung, die GoodFunds nutzt. |
+| **Client-Secret** | Das Passwort dieser App-Registrierung. |
+| **Environment-URL** | Die Adresse eurer Dynamics-Umgebung, z. B. `https://org123.crm4.dynamics.com`. |
+
+## Teil 1 — In Microsoft vorbereiten
+
+<Callout type="warn">
+  Diese Schritte finden in der Microsoft-Verwaltung statt, nicht in GoodFunds. Wenn du dort keinen
+  Zugriff hast, gib diesen Abschnitt an eure IT weiter.
+</Callout>
+
+<Steps>
+
+<Step>
+
+### App registrieren
+
+Registriere im [Microsoft Entra Admin Center](https://entra.microsoft.com) unter **App-Registrierungen**
+eine neue App (z. B. „GoodFunds CRM"). Notiere von der Übersichtsseite die **Client-ID** und die
+**Tenant-ID**.
+
+</Step>
+
+<Step>
+
+### Secret erstellen
+
+Erstelle in der App unter **Zertifikate & Geheimnisse** ein neues Client-Secret und kopiere den **Wert**
+sofort. Er wird nur einmal angezeigt. Das ist dein **Client-Secret**.
+
+<Callout type="warn">
+  Das Secret läuft nach einer Weile ab. Notiere dir das Ablaufdatum — danach musst du in GoodFunds ein
+  neues hinterlegen, sonst stoppt die Übertragung.
+</Callout>
+
+</Step>
+
+<Step>
+
+### Environment-URL heraussuchen
+
+Die **Environment-URL** findest du im
+[Power Platform Admin Center](https://admin.powerplatform.microsoft.com) bei eurer Umgebung. Sie sieht
+so aus: `https://org123.crm4.dynamics.com`. Verwende nur diese Basis-Adresse, ohne weiteren Pfad.
+
+</Step>
+
+<Step>
+
+### App in Dynamics freischalten
+
+Lege die App in Dynamics als **Anwendungsbenutzer** an und gib ihr eine Rolle, die Kontakte lesen und
+schreiben darf. Ohne diesen Schritt darf GoodFunds trotz gültiger Zugangsdaten keine Daten schreiben.
+
+</Step>
+
+</Steps>
+
+<Callout type="info">
+  Die technischen Details zu diesen Microsoft-Schritten (genaue Klickpfade, Berechtigungen, OAuth) stehen
+  in der Entwickler-Dokumentation unter
+  [Microsoft Dynamics 365 → Azure-/Entra-ID-Setup](/docs/microsoft-dynamics-365/azure-setup).
+</Callout>
+
+## Teil 2 — In GoodFunds verbinden
+
+<Steps>
+
+<Step>
+
+### Integration anlegen
+
+Öffne in GoodFunds **Integrationen**, wähle **Microsoft Dynamics** und lege eine neue Verbindung an.
+
+</Step>
+
+<Step>
+
+### Zugangsdaten eintragen
+
+Trage die vier gesammelten Werte ein: **Tenant-ID**, **Client-ID**, **Client-Secret** und
+**Environment-URL**.
+
+<Callout type="warn">
+  Achte beim Einfügen auf versehentliche Leerzeichen — besonders am Ende der Environment-URL. Ein
+  überzähliges Leerzeichen ist die häufigste Ursache für eine fehlgeschlagene Verbindung.
+</Callout>
+
+![Das Formular für die Microsoft-Dynamics-Zugangsdaten in GoodFunds](/docs-assets/integrationen/dynamics-credentials.png)
+
+> 📸 *Screenshot wird ergänzt.*
+
+</Step>
+
+<Step>
+
+### Verbindung testen
+
+Klicke auf **Verbindung testen**. GoodFunds prüft, ob die Zugangsdaten stimmen und eure
+Dynamics-Umgebung erreichbar ist. Erst nach einem erfolgreichen Test kannst du die Felder zuordnen.
+
+</Step>
+
+<Step>
+
+### Felder zuordnen
+
+Lege fest, welches GoodFunds-Feld in welches Dynamics-Feld geschrieben wird — zum Beispiel Vorname →
+`firstname`, E-Mail → `emailaddress1`. GoodFunds schlägt die in eurer Umgebung verfügbaren Felder
+automatisch vor.
+
+</Step>
+
+<Step>
+
+### Aktualisierungs-Strategie wählen
+
+Lege fest, wie GoodFunds mit **bestehenden** Kontakten umgeht:
+
+- **Überspringen** — bestehende Kontakte bleiben unverändert.
+- **Nur leere Felder füllen** — vorhandene Werte in Dynamics bleiben erhalten.
+- **Bei Änderung aktualisieren** *(Standard)* — abweichende Werte werden überschrieben.
+
+</Step>
+
+<Step>
+
+### Speichern
+
+Speichere die Integration. Ab jetzt überträgt GoodFunds neue Kontakte automatisch in dein Dynamics-CRM.
+
+</Step>
+
+</Steps>
+
+## So funktioniert die Übertragung
+
+GoodFunds sucht jeden Kontakt zuerst per **E-Mail-Adresse** in Dynamics:
+
+- **Gibt es ihn schon?** Dann wird er nach deiner gewählten Strategie aktualisiert.
+- **Gibt es ihn noch nicht?** Dann wird er neu angelegt.
+
+## Häufige Fragen
+
+**Die Verbindung schlägt fehl, obwohl alle Daten stimmen.**
+Prüfe zuerst die Environment-URL auf ein überzähliges Leerzeichen am Ende. Stelle außerdem sicher, dass
+die App in Dynamics als Anwendungsbenutzer mit Schreibrechten freigeschaltet ist (Teil 1, Schritt 4).
+
+**Plötzlich werden keine Kontakte mehr übertragen.**
+Vermutlich ist das Client-Secret abgelaufen. Erstelle in Microsoft ein neues und trage es in GoodFunds
+ein.
+
+**Werden bestehende Kontakte überschrieben?**
+Das hängt von deiner Aktualisierungs-Strategie ab. Mit **Überspringen** bleibt in Dynamics alles, wie
+es ist.
+
+**Ich bin Entwickler:in und will wissen, was technisch passiert.**
+Sieh in die Entwickler-Dokumentation: [Microsoft Dynamics 365 (Entwickler)](/docs/microsoft-dynamics-365).

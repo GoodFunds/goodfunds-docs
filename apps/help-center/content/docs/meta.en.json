@@ -1,0 +1,20 @@
+{
+  "title": "Help Center",
+  "root": true,
+  "pages": [
+    "index",
+    "erste-schritte",
+    "sammeln",
+    "verwalten",
+    "kommunizieren",
+    "auswerten",
+    "integrationen",
+    "sicherheit",
+    "datenschutz",
+    "konto",
+    "---Für Autor:innen---",
+    "schreibrichtlinien",
+    "---Für Entwickler---",
+    "microsoft-dynamics-365"
+  ]
+}

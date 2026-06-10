@@ -1,0 +1,131 @@
+---
+title: Architektur- & Entwickler-Referenz
+description: Interner Aufbau des Microsoft-Dynamics-365-CRM-Adapters — Klassen, Dataverse-Web-API-Endpunkte, OData-Besonderheiten, OAuth und Fehlerbehandlung.
+---
+
+Der Microsoft-Dynamics-Adapter folgt dem hexagonalen Aufbau des Projekts und verwendet das bestehende
+CRM-Port-System wieder. Neu ist nur der provider-spezifische Adapter.
+
+## Paketstruktur
+
+```
+integration/outbound/adapter/crm/microsoftdynamics/
+├── domain/
+│   └── MicrosoftDynamicsCredentials.java        entschlüsselte Credential-Struktur
+├── inbound/vaadin/
+│   └── MicrosoftDynamicsCredentialForm.java      Credential-Formular im Assistenten
+└── outbound/
+    ├── MicrosoftDynamicsClient.java              HTTP-/OData-Gateway
+    └── MicrosoftDynamicsProvider.java            CrmIntegrationPort-Implementierung
+```
+
+Der `ProviderName`-Enum erhält den Wert `MicrosoftDynamics`. Spring-Bean-IDs:
+
+- Provider: `MicrosoftDynamicsProvider`
+- Formular: `MicrosoftDynamicsForm` (d. h. `ProviderName.MicrosoftDynamics + "Form"`, damit
+  `IntegrationProviderFactory#getCredentialInput` es automatisch auflöst).
+
+## Verantwortlichkeiten
+
+| Klasse | Verantwortung |
+| --- | --- |
+| `MicrosoftDynamicsCredentials` | Entschlüsselte In-Memory-Zugangsdaten (Tenant/Client/Secret/Environment-URL, Attribut-Map, Update-Strategie). `authMethod = OAUTH2_CLIENT_CREDENTIALS`. Persistiert als verschlüsseltes `configJson`. |
+| `MicrosoftDynamicsClient` | Low-Level-Gateway: OkHttp-Nutzung, URL-Bau, OData-Header, Response-Lesen, HTTP-Fehler-Mapping. Liefert **rohes JSON** als String. |
+| `MicrosoftDynamicsProvider` | Geschäftslogik: parst JSON, mappt GoodFunds ↔ Dynamics, wendet die Update-Strategie an, implementiert `CrmIntegrationPort`. |
+| `MicrosoftDynamicsCredentialForm` | Vaadin-Credential-Formular (`CredentialInput`): sammelt Eingaben, steuert den Verbindungstest, baut das Feld-Mapping. |
+
+## Dataverse-Web-API
+
+Basis-URL: `{environmentUrl}/api/data/v9.2`
+
+| Operation | HTTP | Pfad |
+| --- | --- | --- |
+| Verbindungsprüfung | GET | `/WhoAmI` |
+| Kontakt per E-Mail suchen | GET | `/contacts?$filter=emailaddress1 eq '{email}'` |
+| Kontakt erstellen | POST | `/contacts` |
+| Kontakt aktualisieren | PATCH | `/contacts({contactId})` |
+| Feld-Erkennung | GET | `/EntityDefinitions(LogicalName='contact')/Attributes` |
+
+URLs werden immer mit dem `HttpUrl`-Builder von OkHttp gebaut — **keine String-Konkatenation**. Die
+OData-Entity-Set-/Key-/Navigation-Segmente (z. B. `contacts(<id>)`,
+`EntityDefinitions(LogicalName='contact')`) sind gültige Pfadsegmente und werden unverändert
+durchgereicht.
+
+### OData-Besonderheiten
+
+- Request-Header bei jedem Aufruf: `OData-Version: 4.0`, `Accept: application/json`.
+- Bei POST/PATCH zusätzlich: `Content-Type: application/json` und
+  `Prefer: return=representation` (damit der Response-Body die geschriebene Entität enthält).
+- Collection-Antworten sind in eine OData-Hülle verpackt: `{ "value": [ ... ] }`.
+- Der Kontakt-Primärschlüssel ist `contactid` (eine GUID), bereitgestellt als GoodFunds-External-ID.
+
+## Authentifizierung (OAuth 2.0 Client Credentials)
+
+Die Authentifizierung ist vollständig an den gemeinsamen `OAuthTokenService` (GVL-127) delegiert. Der
+Client baut aus den Zugangsdaten eine `OAuthClientCredentialsConfig` und ruft `getValidToken` auf, das
+das Token pro Credential-ID **cacht** und nach Ablauf **transparent neu holt**.
+
+- Token-Endpunkt: `https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token`
+- Scope: `{environmentUrl}/.default`
+- Jeder Request trägt `Authorization: Bearer {accessToken}`.
+
+Die Environment-URL wird normalisiert (Leerzeichen entfernt, abschließende Schrägstriche entfernt),
+bevor sie in Scope und Basis-URL verwendet wird — ein versehentliches nachgestelltes Leerzeichen
+erzeugt sonst `AADSTS70011 invalid_scope`.
+
+## Upsert-Ablauf
+
+`createOrUpdateContact` ist ein Upsert mit der E-Mail als Schlüssel:
+
+1. `findContact(email)` → GET `/contacts?$filter=emailaddress1 eq '{email}'`.
+2. **Treffer** → Felder mit `ContactAttributeMerger` (gemäß konfigurierter Strategie) zusammenführen
+   und `/contacts({contactId})` per PATCH aktualisieren. Ergibt das Merge keine Änderungen, wird das
+   Update übersprungen und als erfolgreiches No-op gemeldet.
+3. **Kein Treffer** → POST `/contacts`, liefert die neue `contactid`.
+
+Die Feld-Erkennung (`getAvailableContactFields`) liest die `contact`-Attribut-Metadaten und mappt
+Dynamics-Attributtypen auf CRM-Feldtypen:
+
+| Dynamics `AttributeType` | CRM `FieldType` |
+| --- | --- |
+| `String`, `Memo` | `STRING` |
+| `Integer`, `BigInt`, `Decimal`, `Double`, `Money` | `NUMBER` |
+| `DateTime` | `DATE` |
+| `Boolean` | `BOOLEAN` |
+| `Picklist`, `State`, `Status` | `ENUM` |
+| alles andere (Lookup, Owner, Uniqueidentifier, Virtual, …) | *(übersprungen)* |
+
+## Fehlerbehandlung
+
+Der Client mappt HTTP-/Netzwerkfehler auf die Integrations-Exception-Typen, damit der
+Queue-Task-Handler über einen Retry entscheiden kann:
+
+| Bedingung | Exception |
+| --- | --- |
+| HTTP 429 oder 5xx | `RetryableIntegrationException` |
+| Sonstiges Non-2xx | `NonRetryableIntegrationException` |
+| Netzwerk-/IO-Fehler | `RetryableIntegrationException` |
+| Ungültige Environment-URL / Serialisierungsfehler | `NonRetryableIntegrationException` |
+
+`getProviderStatus` wirft nie: bei jedem Fehler liefert es einen `DOWN`-Status mit der Fehlermeldung,
+der das Ergebnis von „Verbindung testen“ im Formular steuert.
+
+## Logging
+
+Operationen loggen mit strukturiertem Kontext — `credentialId`, der Account-ID (dem Host der
+Dataverse-Umgebung), dem Operationsnamen und bei Schreibvorgängen der resultierenden `contactid` sowie
+den geänderten Feld-Keys. Der Client loggt zusätzlich Statuscode und Request-Dauer auf Debug-Level.
+
+## Tests
+
+Drei Testklassen decken den Adapter ab:
+
+- `MicrosoftDynamicsClientTest` — HTTP-Aufrufe gegen einen `MockWebServer` (OkHttp).
+- `MicrosoftDynamicsProviderTest` — alle Port-Methoden gegen einen gemockten Client.
+- `MicrosoftDynamicsCredentialFormTest` — Formular-Validierung.
+
+Backend-Tests ausführen mit:
+
+```bash
+cd vaadin-spring && mvn test -Pskip-frontend -Dtest=MicrosoftDynamics*
+```

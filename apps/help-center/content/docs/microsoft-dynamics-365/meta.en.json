@@ -1,0 +1,5 @@
+{
+  "title": "Microsoft Dynamics 365 (Developer)",
+  "description": "Developer reference for the Microsoft Dynamics 365 (Dataverse) CRM provider",
+  "pages": ["index", "azure-setup", "configuration", "architecture"]
+}

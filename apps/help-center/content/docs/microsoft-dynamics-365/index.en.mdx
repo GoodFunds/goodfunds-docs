@@ -1,0 +1,65 @@
+---
+title: Overview
+description: Connect Microsoft Dynamics 365 as a CRM provider in GoodFunds and sync contacts into your Dataverse environment.
+---
+
+Microsoft Dynamics 365 is the **second CRM provider** in GoodFunds (after Fundraisingbox). It lets an
+organization push GoodFunds contacts into its Dynamics **Dataverse** environment — creating new
+contacts and keeping existing ones up to date.
+
+The shared CRM integration system (the `CrmIntegrationPort`, the queue-task handler and the sync
+orchestrator) is reused as-is. Only the Dynamics-specific adapter is new.
+
+## What you get
+
+- **Contact upsert by email** — GoodFunds looks a contact up by its primary email; if it exists the
+  contact is updated, otherwise a new one is created.
+- **Configurable update strategy** — choose how existing contact data is treated (`SKIP`,
+  `UPDATE_IF_EMPTY`, `UPDATE_IF_CHANGED`).
+- **Field mapping** — map GoodFunds contact fields to Dynamics `contact` attributes, including a live
+  discovery of the attributes available in your environment.
+- **OAuth 2.0 (server-to-server)** — authentication uses the Client Credentials flow against the
+  Microsoft identity platform. No interactive login, no refresh tokens to manage; the access token is
+  cached and refreshed automatically.
+
+## Key concepts
+
+| Term | Meaning |
+| --- | --- |
+| **Dataverse** | The database behind Dynamics 365. GoodFunds talks to its REST **Web API**. |
+| **OData** | The REST/query standard the Web API uses (JSON responses with a `value` array, `$filter`/`$select` query options). |
+| **Microsoft Entra ID** (Azure AD) | Microsoft's identity service, where the GoodFunds app is registered. |
+| **Tenant** | The Microsoft organization. Each org has its own tenant id. |
+| **Environment** | The concrete Dynamics instance, e.g. `https://org123.crm4.dynamics.com`. |
+| **App registration** | The Entra ID identity (client id + client secret) GoodFunds authenticates as. |
+
+## Capabilities
+
+The provider reports the following capabilities to the CRM sync engine:
+
+- `FIELD_DISCOVERY` — read the available `contact` attributes from the environment.
+- `CONTACT_SEARCH` — find a contact by email.
+- `CONTACT_UPDATE` — create and update contacts.
+
+## How it fits together
+
+```
+GoodFunds contact
+      │
+      ▼
+CrmIntegrationPort  ──►  MicrosoftDynamicsProvider   (maps fields, applies update strategy)
+                              │
+                              ▼
+                        MicrosoftDynamicsClient       (HTTP + OData, OAuth token)
+                              │
+                              ▼
+                        Dataverse Web API   {environmentUrl}/api/data/v9.2
+```
+
+## Next steps
+
+1. [Azure / Entra ID setup](./azure-setup) — register the app and collect the four credentials.
+2. [Configuration in GoodFunds](./configuration) — enter the credentials, test the connection and
+   map your fields.
+3. [Architecture & developer reference](./architecture) — the internal design, endpoints and error
+   handling.
