@@ -1,0 +1,30 @@
+# Deploy-Compose für den new-deploy Image-Flow (Templates: devops/deployment@new-deploy).
+# EIN Image (app) — kein nginx: das Help Center ist ein stateless Next.js-Server (standalone).
+# Das fertige <sha>-Image kommt aus der Registry; der Deploy-Job legt eine .env daneben
+# (CI_REGISTRY_IMAGE, IMAGE_TAG, COMPOSE_PROJECT_NAME, PROJECT_BASE_URL, ENVIRONMENT,
+#  sowie alle APPENV_*-CI-Vars mit gestripptem Prefix, z.B. APPENV_OPENAI_API_KEY -> OPENAI_API_KEY)
+# und ergänzt per override.yml `ports: <host>:3000`. Veröffentlichung via Labels.
+services:
+  app:
+    container_name: "${COMPOSE_PROJECT_NAME:-help-center}_app"
+    image: "${CI_REGISTRY_IMAGE}/app:${IMAGE_TAG}"
+    restart: always
+    # Runtime-Env (OPENAI_API_KEY, PROJECT_BASE_URL, …) kommt aus der vom Deploy
+    # gerenderten .env. Ohne OPENAI_API_KEY läuft der KI-Chat im Lexical-Fallback.
+    env_file:
+      - .env
+    expose:
+      - "3000"
+    healthcheck:
+      # `/` liefert einen 3xx-Redirect auf /de (i18n) — wget folgt ihm zu 200.
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    # Veröffentlichung: Deploy generiert Host-Port + Domain (kein ports: hier).
+    # subdomain "@" => bare Haupt-Domain <projekt>.<zone>.<env>.gooddev.de (main-Branch).
+    labels:
+      newdeploy.publish: "true"
+      newdeploy.containerport: "3000"
+      newdeploy.subdomain: "@"
