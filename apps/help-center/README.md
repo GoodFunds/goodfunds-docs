@@ -9,7 +9,7 @@ Run development server:
 npm run dev
 # or
 pnpm dev
-# or
+# or 
 yarn dev
 ```
 
