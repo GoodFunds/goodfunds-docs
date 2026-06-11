@@ -1,6 +1,6 @@
 # goodfunds-docs
 
-Documentation platform for GoodFunds, built as a [pnpm workspace](https://pnpm.io/workspaces).
+Documentation platform for GoodFunds, organized as a monorepo-ready `apps/` layout.
 It hosts our public-facing help center today and will grow to cover API/developer
 documentation, all sharing one stack, look, and AI index.
 
@@ -45,9 +45,12 @@ goodfunds-docs/
 
 ## Getting started
 
+The active app lives in [apps/help-center/](apps/help-center/). Run all commands from there:
+
 ```bash
-pnpm install
-pnpm --filter help-center dev
+cd apps/help-center
+npm install
+npm run dev
 ```
 
 Then open [http://localhost:3000](http://localhost:3000).
@@ -58,4 +61,3 @@ See [apps/help-center/README.md](apps/help-center/README.md) for app-specific de
 
 - [Fumadocs](https://fumadocs.dev) — the documentation framework
 - [Next.js Documentation](https://nextjs.org/docs) — App Router and API reference
-- [pnpm Workspaces](https://pnpm.io/workspaces) — monorepo tooling
